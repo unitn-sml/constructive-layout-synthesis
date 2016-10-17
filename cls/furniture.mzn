@@ -23,7 +23,7 @@ function var float: pwdist(var float: x1, var float: x2, var float: dx1,
 
 float: SIDE = 100.0;
 
-int: N_TABLES = 2;
+int: N_TABLES = 3;
 set of int: TABLES = 1..N_TABLES;
 
 % int: N_TYPES = 2;
