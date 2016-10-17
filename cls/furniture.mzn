@@ -2,8 +2,8 @@ include "globals.mzn";
 
 
 predicate fdiffn(array [int] of var float: x, array [int] of var float: y, array [int] of var float: dx, array [int] of var float: dy) =
-    assert(index_set(x)==index_set(y) /\ index_set(x)==index_set(dx) /\ 
-           index_set(x)==index_set(dy), "diffn: index set mismatch",
+    assert(index_set(x) == index_set(y) /\ index_set(x) == index_set(dx) /\ 
+           index_set(x) == index_set(dy), "fdiffn: index set mismatch",
            forall (i, j in index_set(x) where i < j)(
                x[i] + dx[i] <= x[j] \/ 
                y[i] + dy[i] <= y[j] \/
@@ -12,11 +12,16 @@ predicate fdiffn(array [int] of var float: x, array [int] of var float: y, array
            ));
 
 
-function var float: pwdist(var float: x1, var float: x2, var float: dx1,
-                           var float: y1, var float: y2, var float: dy1, 
-                           var float: dy2) =
-    max(0.0, x2 - x1 - dx1) + max(0, min(y2 - y1 - dy1, y1 - y2 - dy2));
+function var float: xdist(var float: x1, var float: x2, var float: dx1) =
+    x2 - x1 - dx1;
 
+
+function var float: ydist_above(var float: y1, var float: y2, var float: dy1) =
+    y2 - y1 - dy1;
+
+
+function var float: ydist_below(var float: y1, var float: y2, var float: dy2) =
+    y1 - y2 - dy2;
 
 
 %% DOMAIN %%
@@ -43,26 +48,43 @@ constraint fdiffn(x, y, dx, dy);
 
 %% UTILITY %%
 
-int: N_FEATURES = 1;
+int: N_FEATURES = 3;
 set of int: FEATURES = 1..N_FEATURES;
 
-float: combs = N_TABLES * (N_TABLES - 1) / 2;
+int: N_TABLES_COMBS = floor(N_TABLES * (N_TABLES - 1) / 2);
+set of int: TABLES_COMBS = 1..N_TABLES_COMBS;
 
-var float: mean_dist = sum(t1, t2 in TABLES where t1 < t2)(
-                           pwdist(x[t1], x[t2], dx[t1],
-                                  y[t1], y[t2], dy[t1], dy[t2])) / combs;
+array[TABLES_COMBS] of var 0.0..SIDE: xdists = [xdist(x[t1], x[t2], dx[t1]) | t1, t2 in TABLES where t1 < t2];
+array[TABLES_COMBS] of var -SIDE..SIDE: ydists_above = [ydist_above(y[t1], y[t2], dy[t1]) | t1, t2 in TABLES where t1 < t2];
+array[TABLES_COMBS] of var -SIDE..SIDE: ydists_below = [ydist_below(y[t1], y[t2], dy[t2]) | t1, t2 in TABLES where t1 < t2];
 
-array[FEATURES] of float: w;
-array[FEATURES] of var float: phi = [mean_dist];
+var 0.0..SIDE: mean_xdist = sum(xdists) / N_TABLES_COMBS;
+var -SIDE..SIDE: mean_ydist_above = sum(ydists_above) / N_TABLES_COMBS;
+var -SIDE..SIDE: mean_ydist_below = sum(ydists_below) / N_TABLES_COMBS;
+
+array[FEATURES] of float: w = [1.0, 1.0, 1.0];
+array[FEATURES] of var float: phi = [mean_xdist, mean_ydist_above, mean_ydist_below];
 
 var float: obj = sum(f in FEATURES)(w[f] * phi[f]);
 solve
-    :: float_search([mean_dist], 0.1, input_order, indomain_reverse_split, complete)
-      maximize obj;
+    :: seq_search([
+        float_search([obj], 0.1, first_fail, indomain_reverse_split, complete),
+%        float_search([mean_xdist], 0, first_fail, indomain_reverse_split, complete),
+%        float_search([mean_ydist_above], 0, first_fail, indomain_reverse_split, complete),
+%        float_search(ydists_below, 0, first_fail, indomain_reverse_split, complete),
+%        float_search(ydists_below, 0, first_fail, indomain_reverse_split, complete),
+%        float_search(x, 0.1, first_fail, indomain_reverse_split, complete),
+%        float_search(y, 0.1, first_fail, indomain_split, complete),
+    ])
+    maximize obj;
 
-% output [
-%         "mean_dist = " ++ show(mean_dist) ++ "\n" ++
-%         "x = " ++ show(x)
-%         ];
+output [
+        "x = " ++ show(x) ++ "\n" ++
+        "y = " ++ show(y) ++ "\n" ++
+        "mean_xdist = " ++ show(mean_xdist) ++ "\n" ++
+        "mean_ydist_above = " ++ show(mean_ydist_above) ++ "\n" ++
+        "mean_ydist_below = " ++ show(mean_ydist_below) ++ "\n" ++
+        "obj = " ++ show(obj)
+        ];
 
 
