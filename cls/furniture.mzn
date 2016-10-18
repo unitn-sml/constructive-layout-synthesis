@@ -18,8 +18,9 @@ function var int: ydist_below(var int: y1, var int: y2, var int: dy2) =
 int: SIDE = 100;
 float: F_SIDE = int2float(SIDE);
 set of int: EDGE = 0..SIDE;
+set of float: F_EDGE = 0.0..F_SIDE;
 
-int: N_TABLES = 10;
+int: N_TABLES = 4;
 set of int: TABLES = 1..N_TABLES;
 
 % int: N_TYPES = 2;
@@ -39,12 +40,9 @@ constraint diffn(x, y, dx, dy);
 constraint forall(t in TABLES)(x[t] + dx[t] <= SIDE);
 constraint forall(t in TABLES)(y[t] + dy[t] <= SIDE);
 
-%constraint forall(t1, t2 in TABLES where t1 < t2)(x[t1] = x[t2] -> y[t1] >= y[t2] + dy[t2]);
+
 
 %% UTILITY %%
-
-int: N_FEATURES = 2;
-set of int: FEATURES = 1..N_FEATURES;
 
 int: N_TABLES_COMBS = round(N_TABLES * (N_TABLES - 1) / 2);
 set of int: TABLES_COMBS = 1..N_TABLES_COMBS;
@@ -54,22 +52,21 @@ array[TABLES_COMBS] of var int: ydists_above = [ydist_above(y[t1], y[t2], dy[t1]
 array[TABLES_COMBS] of var int: ydists_below = [ydist_below(y[t1], y[t2], dy[t2]) | t1, t2 in TABLES where t1 < t2];
 array[TABLES_COMBS] of var int: ydists = [max(ydists_above[t1 + t2 - 1], ydists_below[t1 + t2 - 1]) | t1, t2 in TABLES where t1 < t2];
 
-%constraint forall(t in TABLES_COMBS)(ydists_above[t] >= 0 \/ ydists_below[t] >= 0);
-
 int: MAX_SUM_DIST = N_TABLES_COMBS * SIDE;
+set of int: SUM_SPAN = 0..MAX_SUM_DIST;
 
-var 0..MAX_SUM_DIST: sum_xdist = sum(xdists);
-var 0..MAX_SUM_DIST: sum_ydist = sum(ydists);
+var SUM_SPAN: sum_xdist = sum(xdists);
+var SUM_SPAN: sum_ydist = sum(ydists);
+var F_EDGE: mean_xdist = sum_xdist / N_TABLES_COMBS;
+var F_EDGE: mean_ydist = sum_ydist / N_TABLES_COMBS;
 
-var 0.0..F_SIDE: mean_xdist = sum_xdist / N_TABLES_COMBS;
-var 0.0..F_SIDE: mean_ydist = sum_ydist / N_TABLES_COMBS;
+%array[TABLES_COMBS] of var float: xdist_diffs = [abs(xdists[t1 + t2 - 1] - mean_xdist) | t1, t2 in TABLES where t1 < t2];
+%array[TABLES_COMBS] of var float: ydist_diffs = [abs(ydists[t1 + t2 - 1] - mean_ydist) | t1, t2 in TABLES where t1 < t2];
+%var float: sd_xdist = sum(xdist_diffs) / N_TABLES_COMBS;
+%var float: sd_ydist = sum(ydist_diffs) / N_TABLES_COMBS;
 
-%var 0.0..F_SIDE: sd_xdist = sum(t1, t2 in TABLES where t1 < t2)(
-%                                abs(xdist[t1 + t2 - 1] - mean_xdist)) / N_TABLES_COMBS;
-
-%var 0.0..F_SIDE: sd_ydist = sum(t1, t2 in TABLES where t1 < t2)(
-%                                abs(ydists[t1 + t2 - 1] - mean_ydist)) / N_TABLES_COMBS;
-
+int: N_FEATURES = 2;
+set of int: FEATURES = 1..N_FEATURES;
 
 array[FEATURES] of float: w = [1.0, 1.0];
 array[FEATURES] of var float: phi = [mean_xdist, mean_ydist];
@@ -77,7 +74,9 @@ array[FEATURES] of var float: w_phi = [w[f] * phi[f] | f in FEATURES];
 var float: obj = sum(w_phi);
 
 solve
-    :: int_search(xdists ++ ydists_above ++ ydists_below, dom_w_deg, indomain_max, complete)
+    :: seq_search([
+        int_search(xdists ++ ydists_above ++ ydists_below, dom_w_deg, indomain_max, complete),
+    ])
     maximize obj;
 
 output [
