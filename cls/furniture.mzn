@@ -3,18 +3,10 @@ include "globals.mzn";
 %% DOMAIN %%
 
 int: SIDE = 100;
-%float: F_SIDE = int2float(SIDE);
 set of int: EDGE = 0..SIDE;
-%set of float: F_EDGE = 0.0..F_SIDE;
 
 int: N_TABLES = 10;
 set of int: TABLES = 1..N_TABLES;
-
-% int: N_TYPES = 2;
-% int: TYPES = 1..N_TYPES;
-% array[TYPES] of int: table_type_d1 = [2, 1];
-% array[TYPES] of int: table_type_d2 = [3, 4];
-% array[TABLES] of var TYPES: table_type;
 
 array[TABLES] of var EDGE: x;
 array[TABLES] of var 1..1: dx;
@@ -41,19 +33,11 @@ array[TABLES_COMBS] of var int: ydists = [max(ydists_above[t1 + t2 - 1], ydists_
 
 constraint forall(i in TABLES_COMBS)(ydists_above[i] >= 0 \/ ydists_below[i] >= 0);
 
-
-%int: MAX_SUM_DIST = N_TABLES_COMBS * SIDE;
-%set of int: SUM_SPAN = 0..MAX_SUM_DIST;
-
 var int: sum_xdist = sum(xdists);
 var int: sum_ydist = sum(ydists);
 var float: mean_xdist = sum_xdist / N_TABLES_COMBS;
 var float: mean_ydist = sum_ydist / N_TABLES_COMBS;
 
-%array[TABLES_COMBS] of var float: xdist_diffs = [abs(xdists[t1 + t2 - 1] - mean_xdist) | t1, t2 in TABLES where t1 < t2];
-%array[TABLES_COMBS] of var float: ydist_diffs = [abs(ydists[t1 + t2 - 1] - mean_ydist) | t1, t2 in TABLES where t1 < t2];
-%var float: sd_xdist = sum(xdist_diffs) / N_TABLES_COMBS;
-%var float: sd_ydist = sum(ydist_diffs) / N_TABLES_COMBS;
 
 int: N_FEATURES = 2;
 set of int: FEATURES = 1..N_FEATURES;
