@@ -31,8 +31,6 @@ array[TABLES_COMBS] of var int: ydists_above = [y[t2] - y[t1] | t1, t2 in TABLES
 array[TABLES_COMBS] of var int: ydists_below = [y[t1] - y[t2] | t1, t2 in TABLES where t1 < t2];
 array[TABLES_COMBS] of var int: ydists = [max(ydists_above[t1 + t2 - 1], ydists_below[t1 + t2 - 1]) | t1, t2 in TABLES where t1 < t2];
 
-constraint forall(i in TABLES_COMBS)(ydists_above[i] >= 0 \/ ydists_below[i] >= 0);
-
 var int: sum_xdist = sum(xdists);
 var int: sum_ydist = sum(ydists);
 var float: mean_xdist = sum_xdist / N_TABLES_COMBS;
