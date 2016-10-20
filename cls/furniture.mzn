@@ -3,7 +3,7 @@ include "globals.mzn";
 %% DOMAIN %%
 
 int: SIDE = 100;
-set of int: EDGE = 0..SIDE;
+set of int: EDGE = 1..SIDE;
 
 int: N_TABLES = 20;
 set of int: TABLES = 1..N_TABLES;
@@ -67,18 +67,16 @@ solve
     :: seq_search([
         int_search(ydists_above ++ ydists_below, dom_w_deg, indomain_max, complete),
         int_search([max_xdist, min_xdist, max_ydist, min_ydist], dom_w_deg, indomain_max, complete),
-        %float_search(w_phi, 0.1, first_fail, indomain_reverse_split, complete),
         int_search(xdists, dom_w_deg, indomain_max, complete),
         int_search(w_phi, first_fail, indomain_max, complete),
-        %float_search([w_phi[1], w_phi[3]], 0.1, first_fail, indomain_reverse_split, complete),
-        %float_search([w_phi[2], w_phi[4]], 0.1, first_fail, indomain_split, complete)
     ])
     maximize obj;
 
 output [
-        "x = " ++ show(x) ++ "\n" ++
-        "y = " ++ show(y) ++ "\n" ++
-        "obj = " ++ show(obj)
+        "x = " ++ show(x) ++ ";\n" ++
+        "y = " ++ show(y) ++ ";\n" ++
+        "dx = " ++ show(dx) ++ ";\n" ++
+        "dy = " ++ show(dy) ++ ";"
         ];
 
 
