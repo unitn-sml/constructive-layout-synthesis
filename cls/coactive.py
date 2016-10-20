@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 
-import pymzn
 import logging
 import numpy as np
 
@@ -35,7 +34,11 @@ class Problem(object):
         raise NotImplementedError()
 
     def infer(self, w):
-        """Makes inference """
+        """Infers optimal object."""
+        raise NotImplementedError()
+
+    def improve(self, x, w):
+       """Makes a minimal improvement to x w.r.t. w."""
         raise NotImplementedError()
 
     def utility(self, x, w):
@@ -76,7 +79,7 @@ class User(object):
 
     def improve(self, x):
         """Computes an improvement for x."""
-        return minizinc('improve.mzn', data={'x': x})
+        return self.problem.improve(x, self.w_star)
 
     def satisfied(self, x):
         """Returns true if regret of object x is zero."""
