@@ -40,3 +40,20 @@ class BracesAdapter(logging.LoggerAdapter):
             self.logger._log(level, m, (), **kwargs)
 
 
+
+"""Wrangling utilities"""
+
+def freeze(x):
+    """Freezes a dictionary, i.e. makes it immutable and thus hashable."""
+    frozen = {}
+    for k, v in x.items():
+        if isinstance(v, list):
+            frozen[k] = tuple(v)
+        else:
+            frozen[k] = v
+    return frozenset(frozen.items())
+
+
+def input_x(x):
+    return {'input_' + k: v for k, v in x}
+
