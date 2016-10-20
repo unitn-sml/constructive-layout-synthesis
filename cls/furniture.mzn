@@ -3,15 +3,18 @@ include "globals.mzn";
 %% DOMAIN %%
 
 int: SIDE = 100;
+float: F_SIDE = SIDE * 1.0;
 set of int: EDGE = 1..SIDE;
 
-int: N_TABLES = 20;
+int: N_TABLES = 25;
 set of int: TABLES = 1..N_TABLES;
 
+int: MAX_TABLE_SIDE = 3;
+
 array[TABLES] of var EDGE: x;
-array[TABLES] of var 1..1: dx;
+array[TABLES] of var 1..MAX_TABLE_SIDE: dx;
 array[TABLES] of var EDGE: y;
-array[TABLES] of var 1..1: dy;
+array[TABLES] of var 1..MAX_TABLE_SIDE: dy;
 
 constraint increasing(x);
 constraint diffn(x, y, dx, dy);
@@ -26,9 +29,9 @@ constraint forall(t in TABLES)(y[t] + dy[t] <= SIDE);
 int: N_TABLES_COMBS = round(N_TABLES * (N_TABLES - 1) / 2);
 set of int: TABLES_COMBS = 1..N_TABLES_COMBS;
 
-array[TABLES_COMBS] of var int: xdists = [x[t2] - x[t1] | t1, t2 in TABLES where t1 < t2];
+array[TABLES_COMBS] of var int: xdists = [x[t2] - x[t1] ]| t1, t2 in TABLES where t1 < t2];
 array[TABLES_COMBS] of var int: ydists_above = [y[t2] - y[t1] | t1, t2 in TABLES where t1 < t2];
-array[TABLES_COMBS] of var int: ydists_below = [y[t1] - y[t2] | t1, t2 in TABLES where t1 < t2];
+array[TABLES_COMBS] of var int: ydists_below = [y[t1] - y[t2]  | t1, t2 in TABLES where t1 < t2];
 array[TABLES_COMBS] of var int: ydists = [max(ydists_above[t1 + t2 - 2], ydists_below[t1 + t2 - 2]) | t1, t2 in TABLES where t1 < t2];
 
 %var int: sum_xdist = sum(xdists);
@@ -36,12 +39,15 @@ array[TABLES_COMBS] of var int: ydists = [max(ydists_above[t1 + t2 - 2], ydists_
 %var float: mean_xdist = sum_xdist / N_TABLES_COMBS;
 %var float: mean_ydist = sum_ydist / N_TABLES_COMBS;
 
+var int: max_dx = max(dx);
+var int: max_dy = max(dy);
+
 var int: max_xdist = max(xdists);
 var int: min_xdist = min(xdists);
 var int: max_ydist = max(ydists);
 var int: min_ydist = min(ydists);
 
-int: N_FEATURES = 4;
+int: N_FEATURES = 6;
 set of int: FEATURES = 1..N_FEATURES;
 
 array[FEATURES] of float: w;
@@ -59,7 +65,7 @@ set of int: PHI_DOM = PHI_LB..PHI_UB;
 set of int: W_PHI_DOM = W_PHI_LB..W_PHI_UB;
 set of int: OBJ_DOM = OBJ_LB..OBJ_UB;
 
-array[FEATURES] of var PHI_DOM: phi = [max_xdist, min_xdist, max_ydist, min_ydist];
+array[FEATURES] of var PHI_DOM: phi = [max_xdist, min_xdist, max_ydist, min_ydist,max_dx,max_dy];
 array[FEATURES] of var W_PHI_DOM: w_phi = [w0[f] * phi[f] | f in FEATURES];
 var OBJ_DOM: obj = sum(w_phi);
 
@@ -67,6 +73,7 @@ solve
     :: seq_search([
         int_search(ydists_above ++ ydists_below, dom_w_deg, indomain_max, complete),
         int_search([max_xdist, min_xdist, max_ydist, min_ydist], dom_w_deg, indomain_max, complete),
+        int_search([max_dx, max_dy], dom_w_deg, indomain_max, complete),
         int_search(xdists, dom_w_deg, indomain_max, complete),
         int_search(w_phi, first_fail, indomain_max, complete),
     ])
@@ -76,7 +83,8 @@ output [
         "x = " ++ show(x) ++ ";\n" ++
         "y = " ++ show(y) ++ ";\n" ++
         "dx = " ++ show(dx) ++ ";\n" ++
-        "dy = " ++ show(dy) ++ ";"
+        "dy = " ++ show(dy) ++ ";\n" ++
+        "dy = " ++ show(obj) ++ ";"
         ];
 
 
