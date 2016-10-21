@@ -39,7 +39,7 @@ class Problem(object):
 
     def improve(self, x, w):
        """Makes a minimal improvement to x w.r.t. w."""
-        raise NotImplementedError()
+       raise NotImplementedError()
 
     def utility(self, x, w):
         """ Computes the utility of x w.r.t. the weights w."""
