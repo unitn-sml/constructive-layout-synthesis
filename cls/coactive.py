@@ -88,10 +88,6 @@ class User(object):
         """Computes an improvement for x."""
         return self.problem.improve(x, self.w_star)
 
-    def satisfied(self, x):
-        """Returns true if regret of object x is zero."""
-        return self.regret(x) == 0.0
-
 
 def pp(problem, user, max_iters=100):
     """The Preference Perceptron [1]_.
@@ -125,7 +121,7 @@ def pp(problem, user, max_iters=100):
     w = problem.init_w()
     trace = []
     for i in range(max_iters):
-        log.debug('it = {}, w = {}', i, w)
+        log.debug('uid = {}, it = {}, w = {}', user.uid, i, w)
 
         # Inference
         t0 = time()
@@ -134,9 +130,13 @@ def pp(problem, user, max_iters=100):
         log.debug('uid = {}, it = {}, x = {}', user.uid, i, x)
         log.debug('uid = {}, it = {}, t_infer = {}', user.uid, i, t_infer)
 
-        if user.satisfied(x):
-            trace.append((0.0, t_infer))
+        regret = user.regret(x)
+        log.debug('uid = {}, it = {}, regret = {}', user.uid, i, regret)
+
+        if regret == 0.0:
             log.debug('outcome: user satisfied')
+            trace.append((regret, t_infer))
+            print(msg.format(user.uid, i, t_infer, regret))
             break
 
         # Improvement
@@ -152,12 +152,10 @@ def pp(problem, user, max_iters=100):
         t_update = time() - t2
         log.debug('uid = {}, it = {}, t_update = {}', user.uid, i, t_update)
 
-        regret = user.regret(x)
         t_elapsed = t_infer + t_update
-        trace.append((regret, t_elapsed))
-        log.debug('uid = {}, it = {}, regret = {}', user.uid, i, regret)
-        log.debug('uid = {}, it = {}, regret = {}', user.uid, i, t_elapsed)
+        log.debug('uid = {}, it = {}, t_elapsed = {}', user.uid, i, t_elapsed)
 
+        trace.append((regret, t_elapsed))
         print(msg.format(user.uid, i, t_elapsed, regret))
 
     else:
