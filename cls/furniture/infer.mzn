@@ -26,7 +26,7 @@ constraint forall(t in TABLES)(y[t] + dy[t] <= SIDE);
 
 %% PHI %%
 
-int: N_TABLES_COMBS = round(N_TABLES * (N_TABLES - 1) / 2);
+int: N_TABLES_COMBS = round(int2float(N_TABLES) * (int2float(N_TABLES) - 1.0) / 2.0);
 set of int: TABLES_COMBS = 1..N_TABLES_COMBS;
 
 array[TABLES_COMBS] of var int: xdists = [x[t2] - x[t1]| t1, t2 in TABLES where t1 < t2];
@@ -57,7 +57,8 @@ array[FEATURES] of var PHI_DOM: phi = [max_xdist, min_xdist, max_ydist, min_ydis
 %% UTILITY %%
 
 array[FEATURES] of float: w;
-array[FEATURES] of int: w0 = [round(w[f]*100) | f in FEATURES];
+array[FEATURES] of int: w0 = [round(w[f]*100.0) | f in FEATURES];
+%array[FEATURES] of int: w0;
 
 int: W_LB = lb_array(w0);
 int: W_UB = ub_array(w0);
@@ -87,6 +88,6 @@ output [
         "y = " ++ show(y) ++ ";\n" ++
         "dx = " ++ show(dx) ++ ";\n" ++
         "dy = " ++ show(dy) ++ ";\n" ++
-        "dy = " ++ show(obj) ++ ";"
+        "dy = " ++ show(utility) ++ ";"
         ];
 
