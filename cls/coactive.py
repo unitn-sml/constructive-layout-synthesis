@@ -55,6 +55,8 @@ class User(object):
         An instance of Problem.
     w_star : numpy.ndarray of shape (problem.num_features,)
         The true weight vector.
+    uid : positive int
+        Identifier for the user.
 
     Attributes
     ----------
@@ -64,14 +66,19 @@ class User(object):
         The utility of x_star.
     """
 
-    def __init__(self, problem, w_star):
+    def __init__(self, problem, w_star, uid=0):
         if w_star.shape != (problem.num_features,):
             raise ValueError('Mismatching w_star')
 
         self.problem = problem
         self.w_star = w_star
+        self._uid = uid
         self.x_star = self.problem.infer(self.w_star)
         self.u_star = self.problem.utility(self.x_star, self.w_star)
+
+    @property
+    def uid(self):
+        return self._uid
 
     def regret(self, x):
         """Returns the regret of object x."""
@@ -86,7 +93,7 @@ class User(object):
         return self.regret(x) == 0.0
 
 
-def pp(problem, user, max_iters=100, uid=0):
+def pp(problem, user, max_iters=100):
     """The Preference Perceptron [1]_.
 
     This is a context-less implementation, used for preference elicitation.
@@ -102,8 +109,6 @@ def pp(problem, user, max_iters=100, uid=0):
         The user of the perceptron.
     max_iters : positive int
         Number of iterations.
-    uid : positive int
-        Identifier for the current user.
 
     Returns
     -------
@@ -126,8 +131,8 @@ def pp(problem, user, max_iters=100, uid=0):
         t0 = time()
         x = problem.infer(w)
         t_infer = time() - t0
-        log.debug('uid = {}, it = {}, x = {}', uid, i, x)
-        log.debug('uid = {}, it = {}, t_infer = {}', uid, i, t_infer)
+        log.debug('uid = {}, it = {}, x = {}', user.uid, i, x)
+        log.debug('uid = {}, it = {}, t_infer = {}', user.uid, i, t_infer)
 
         if user.satisfied(x):
             trace.append((0.0, t_infer))
@@ -138,22 +143,22 @@ def pp(problem, user, max_iters=100, uid=0):
         t1 = time()
         x_bar = user.improve(x)
         t_improve = time() - t1
-        log.debug('uid = {}, it = {}, x_bar = {}', uid, i, x_bar)
-        log.debug('uid = {}, it = {}, t_improve = {}', uid, i, t_improve)
+        log.debug('uid = {}, it = {}, x_bar = {}', user.uid, i, x_bar)
+        log.debug('uid = {}, it = {}, t_improve = {}', user.uid, i, t_improve)
 
         # Model update
         t2 = time()
         w += problem.phi(x_bar) - problem.phi(x)
         t_update = time() - t2
-        log.debug('uid = {}, it = {}, t_update = {}', uid, i, t_update)
+        log.debug('uid = {}, it = {}, t_update = {}', user.uid, i, t_update)
 
         regret = user.regret(x)
         t_elapsed = t_infer + t_update
         trace.append((regret, t_elapsed))
-        log.debug('uid = {}, it = {}, regret = {}', uid, i, regret)
-        log.debug('uid = {}, it = {}, regret = {}', uid, i, t_elapsed)
+        log.debug('uid = {}, it = {}, regret = {}', user.uid, i, regret)
+        log.debug('uid = {}, it = {}, regret = {}', user.uid, i, t_elapsed)
 
-        print(msg.format(uid, i, t_elapsed, regret))
+        print(msg.format(user.uid, i, t_elapsed, regret))
 
     else:
         log.debug('outcome: user not satisfied')
