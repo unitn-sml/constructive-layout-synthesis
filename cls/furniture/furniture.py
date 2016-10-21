@@ -12,36 +12,42 @@ class Furniture(Problem):
 
     Parameters
     ----------
-    num_features : positive int
-        The number of features in :math:`\phi`
+    canvas_size : positive int
+        The size of the canvas.
+    num_tables : positive int
+        The number of tables.
     """
 
-    phi_model = 'phi.mzn'
-    infer_model = 'infer.mzn'
-    improve_model = 'improve.mzn'
+    infer_model = 'cls/furniture/infer.mzn'
+    improve_model = 'cls/furniture/improve.mzn'
+    phi_model = 'cls/furniture/phi.mzn'
 
-    def __init__(self, canvas_size=100, num_tables=20, **kwargs):
+    def __init__(self, canvas_size=100, num_tables=10, **kwargs):
         num_features = 4
         super().__init__(num_features)
 
         self._data = {'SIDE': canvas_size, 'N_TABLES': num_tables}
         self._phis = {}
+        self._debug = kwargs['debug']
 
     def phi(self, x):
         _frx = freeze(x)
         if _frx in self._phis:
             return self._phis[_frx]
 
-        phi = pymzn.minizinc(phi_model, data={**self._data, **input_x(x)},
-                             output_vars=['phi'])[0]['phi']
+        phi = pymzn.minizinc(self.phi_model, data={**self._data, **input_x(x)},
+                             output_vars=['phi'], serialize=True,
+                             keep=self._debug, time=30000)[0]['phi']
         self._phis[_frx] = np.array(phi)
         return self._phis[_frx]
 
     def infer(self, w):
-        return pymzn.minizinc(infer_model, data={**self._data, 'w': w},
-                              output_vars=['x', 'y', 'dx', 'dy'])[0]
+        return pymzn.minizinc(self.infer_model, data={**self._data, 'w': w},
+                              output_vars=['x', 'y', 'dx', 'dy'],
+                              serialize=True, keep=self._debug, time=30000)[0]
 
     def improve(self, x, w):
-        return pymzn.minizinc(improve_model,
+        return pymzn.minizinc(self.improve_model,
                               data={**self._data, **input_x(x), 'w': w},
-                              output_vars=['x', 'y', 'dx', 'dy'])[0]
+                              output_vars=['x', 'y', 'dx', 'dy'],
+                              serialize=True, keep=self._debug, time=30000)[0]
