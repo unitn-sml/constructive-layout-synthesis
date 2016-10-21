@@ -20,7 +20,8 @@ class Furniture(Problem):
     infer_model = 'infer.mzn'
     improve_model = 'improve.mzn'
 
-    def __init__(self, num_features, canvas_size=100, num_tables=20):
+    def __init__(self, canvas_size=100, num_tables=20, **kwargs):
+        num_features = 4
         super().__init__(num_features)
 
         self._data = {'SIDE': canvas_size, 'N_TABLES': num_tables}
