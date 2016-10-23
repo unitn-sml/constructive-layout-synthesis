@@ -23,7 +23,7 @@ class Furniture(Problem):
     phi_model = 'cls/furniture/phi.mzn'
 
     def __init__(self, canvas_size=100, num_tables=10, **kwargs):
-        num_features = 4
+        num_features = 6
         super().__init__(num_features)
 
         self._data = {'SIDE': canvas_size, 'N_TABLES': num_tables}
