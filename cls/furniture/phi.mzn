@@ -26,8 +26,9 @@ array[TABLES_COMBS] of int: ydists_below = [input_y[t1] - input_y[t2] | t1, t2 i
 array[TABLES_COMBS] of int: ydists = [max(ydists_above[t1 + t2 - 2], ydists_below[t1 + t2 - 2]) | t1, t2 in TABLES where t1 < t2];
 
 
-int: max_dx = max(dx);
-int: max_dy = max(dy);
+int: max_dx = max(input_dx);
+int: max_dy = max(input_dy);
+
 
 int: max_xdist = max(xdists);
 int: min_xdist = min(xdists);

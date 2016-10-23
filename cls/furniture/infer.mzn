@@ -8,13 +8,14 @@ include "globals.mzn";
 int: SIDE;
 int: N_TABLES;
 int: MAX_TABLE_SIDE = 3;
+set of int: TABLE_SIDES = 1..MAX_TABLE_SIDE;
 set of int: EDGE = 1..SIDE;
 set of int: TABLES = 1..N_TABLES;
 
 array[TABLES] of var EDGE: x;
-array[TABLES] of var 1..MAX_TABLE_SIDE: dx;
+array[TABLES] of var TABLE_SIDES: dx;
 array[TABLES] of var EDGE: y;
-array[TABLES] of var 1..MAX_TABLE_SIDE: dy;
+array[TABLES] of var TABLE_SIDES: dy;
 
 constraint increasing(x);
 constraint diffn(x, y, dx, dy);
@@ -51,6 +52,8 @@ set of int: PHI_DOM = PHI_LB..PHI_UB;
 int: N_FEATURES = 6;
 set of int: FEATURES = 1..N_FEATURES;
 array[FEATURES] of var PHI_DOM: phi = [max_xdist, min_xdist, max_ydist, min_ydist, max_dx, max_dy];
+%array[FEATURES] of var PHI_DOM: phi = [max_dx, max_dy];
+%array[FEATURES] of var PHI_DOM: phi = [max_xdist, min_xdist, max_ydist, min_ydist];
 
 
 
@@ -62,14 +65,14 @@ array[FEATURES] of int: w0 = [round(w[f]*100.0) | f in FEATURES];
 
 int: W_LB = lb_array(w0);
 int: W_UB = ub_array(w0);
-int: W_PHI_LB = min(W_LB*PHI_LB, W_UB*PHI_UB);
-int: W_PHI_UB = max([W_LB*PHI_LB, W_UB*PHI_LB, W_LB*PHI_UB, W_UB*PHI_UB]);
+int: W_PHI_UB = max(W_LB*PHI_LB, W_UB*PHI_UB);
+int: W_PHI_LB = min([W_LB*PHI_LB, W_UB*PHI_LB, W_LB*PHI_UB, W_UB*PHI_UB]);
 int: U_LB = N_FEATURES * W_PHI_LB;
 int: U_UB = N_FEATURES * W_PHI_UB;
 set of int: W_PHI_DOM = W_PHI_LB..W_PHI_UB;
 set of int: U_DOM = U_LB..U_UB;
 
-array[FEATURES] of var W_PHI_DOM: w_phi = [w0[f] * phi[f] | f in FEATURES];
+array[FEATURES] of var int : w_phi = [w0[f] * phi[f] | f in FEATURES];
 var U_DOM: utility = sum(w_phi);
 
 
@@ -88,6 +91,10 @@ output [
         "y = " ++ show(y) ++ ";\n" ++
         "dx = " ++ show(dx) ++ ";\n" ++
         "dy = " ++ show(dy) ++ ";\n" ++
-        "dy = " ++ show(utility) ++ ";"
+        "maxdx = " ++ show(max_dx) ++ ";\n" ++
+        "maxdy = " ++ show(max_dy) ++ ";\n" ++
+        "util = " ++ show(utility) ++ ";\n" ++
+        "PHI_LB = ", show(PHI_LB) ,";\n" ++
+        "W_PHI_DOM = " ++ show(W_PHI_DOM) ++ ";\n"
         ];
 
