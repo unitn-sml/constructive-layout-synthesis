@@ -7,22 +7,15 @@ include "globals.mzn";
 
 int: SIDE;
 int: N_TABLES;
-int: MAX_TABLE_SIDE = 3;
-set of int: TABLE_SIDES = 1..MAX_TABLE_SIDE;
-set of int: EDGE = 1..SIDE;
+set of int: DISTS = 0..SIDE;
+set of int: EDGE = 1..SIDE-1;
 set of int: TABLES = 1..N_TABLES;
 
 array[TABLES] of var EDGE: x;
-array[TABLES] of var TABLE_SIDES: dx;
 array[TABLES] of var EDGE: y;
-array[TABLES] of var TABLE_SIDES: dy;
 
 constraint increasing(x);
-constraint diffn(x, y, dx, dy);
-
-constraint forall(t in TABLES)(x[t] + dx[t] <= SIDE);
-constraint forall(t in TABLES)(y[t] + dy[t] <= SIDE);
-
+constraint diffn(x, y, [1 | i in TABLES], [1 | i in TABLES]);
 
 
 %% PHI %%
@@ -35,25 +28,21 @@ array[TABLES_COMBS] of var int: ydists_above = [y[t2] - y[t1] | t1, t2 in TABLES
 array[TABLES_COMBS] of var int: ydists_below = [y[t1] - y[t2]  | t1, t2 in TABLES where t1 < t2];
 array[TABLES_COMBS] of var int: ydists = [max(ydists_above[t1 + t2 - 2], ydists_below[t1 + t2 - 2]) | t1, t2 in TABLES where t1 < t2];
 
-%var int: sum_xdist = sum(xdists);
-%var int: sum_ydist = sum(ydists);
+var int: sum_xdist = sum(xdists);
+var int: sum_ydist = sum(ydists);
 
-var int: max_dx = max(dx);
-var int: max_dy = max(dy);
-var int: max_xdist = max(xdists);
-var int: min_xdist = min(xdists);
-var int: max_ydist = max(ydists);
-var int: min_ydist = min(ydists);
+var DISTS: max_xdist = max(xdists);
+var DISTS: min_xdist = min(xdists);
+var DISTS: max_ydist = max(ydists);
+var DISTS: min_ydist = min(ydists);
 
 int: PHI_LB = 0;
 int: PHI_UB = SIDE;
 set of int: PHI_DOM = PHI_LB..PHI_UB;
 
-int: N_FEATURES = 6;
+int: N_FEATURES = 4;
 set of int: FEATURES = 1..N_FEATURES;
-array[FEATURES] of var PHI_DOM: phi = [max_xdist, min_xdist, max_ydist, min_ydist, max_dx, max_dy];
-%array[FEATURES] of var PHI_DOM: phi = [max_dx, max_dy];
-%array[FEATURES] of var PHI_DOM: phi = [max_xdist, min_xdist, max_ydist, min_ydist];
+array[FEATURES] of var PHI_DOM: phi = [max_xdist, min_xdist, max_ydist, min_ydist];
 
 
 
@@ -61,7 +50,6 @@ array[FEATURES] of var PHI_DOM: phi = [max_xdist, min_xdist, max_ydist, min_ydis
 
 array[FEATURES] of float: w;
 array[FEATURES] of int: w0 = [round(w[f]*100.0) | f in FEATURES];
-%array[FEATURES] of int: w0;
 
 int: W_LB = lb_array(w0);
 int: W_UB = ub_array(w0);
@@ -80,19 +68,15 @@ solve
     :: seq_search([
         int_search(ydists_above ++ ydists_below, dom_w_deg, indomain_max, complete),
         int_search([max_xdist, min_xdist, max_ydist, min_ydist], dom_w_deg, indomain_max, complete),
-        int_search([max_dx, max_dy], dom_w_deg, indomain_max, complete),
         int_search(xdists, dom_w_deg, indomain_max, complete),
-        int_search(w_phi, first_fail, indomain_max, complete),
+        int_search(w_phi, dom_w_deg, indomain_max, complete),
+        int_search(y ++ x, dom_w_deg, indomain_min, complete),
     ])
     maximize utility;
 
 output [
         "x = " ++ show(x) ++ ";\n" ++
         "y = " ++ show(y) ++ ";\n" ++
-        "dx = " ++ show(dx) ++ ";\n" ++
-        "dy = " ++ show(dy) ++ ";\n" ++
-        "maxdx = " ++ show(max_dx) ++ ";\n" ++
-        "maxdy = " ++ show(max_dy) ++ ";\n" ++
         "util = " ++ show(utility) ++ ";\n" ++
         "PHI_LB = ", show(PHI_LB) ,";\n" ++
         "W_PHI_DOM = " ++ show(W_PHI_DOM) ++ ";\n"
