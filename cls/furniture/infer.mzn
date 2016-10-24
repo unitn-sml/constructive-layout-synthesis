@@ -30,7 +30,6 @@ array[TABLES_COMBS] of var int: ydists = [max(ydists_above[t1 + t2 - 2], ydists_
 
 var int: sum_xdist = sum(xdists);
 var int: sum_ydist = sum(ydists);
-
 var DISTS: max_xdist = max(xdists);
 var DISTS: min_xdist = min(xdists);
 var DISTS: max_ydist = max(ydists);
@@ -40,9 +39,9 @@ int: PHI_LB = 0;
 int: PHI_UB = SIDE;
 set of int: PHI_DOM = PHI_LB..PHI_UB;
 
-int: N_FEATURES = 4;
+int: N_FEATURES = 6;
 set of int: FEATURES = 1..N_FEATURES;
-array[FEATURES] of var PHI_DOM: phi = [max_xdist, min_xdist, max_ydist, min_ydist];
+array[FEATURES] of var PHI_DOM: phi = [sum_xdist, sum_ydist, max_xdist, min_xdist, max_ydist, min_ydist];
 
 
 
@@ -60,18 +59,12 @@ int: U_UB = N_FEATURES * W_PHI_UB;
 set of int: W_PHI_DOM = W_PHI_LB..W_PHI_UB;
 set of int: U_DOM = U_LB..U_UB;
 
-array[FEATURES] of var int : w_phi = [w0[f] * phi[f] | f in FEATURES];
+array[FEATURES] of var W_PHI_DOM: w_phi = [w0[f] * phi[f] | f in FEATURES];
 var U_DOM: utility = sum(w_phi);
 
 
 solve
-    :: seq_search([
-        int_search(ydists_above ++ ydists_below, dom_w_deg, indomain_max, complete),
-        int_search([max_xdist, min_xdist, max_ydist, min_ydist], dom_w_deg, indomain_max, complete),
-        int_search(xdists, dom_w_deg, indomain_max, complete),
-        int_search(w_phi, dom_w_deg, indomain_max, complete),
-        int_search(y ++ x, dom_w_deg, indomain_min, complete),
-    ])
+    :: int_search(x ++ y, dom_w_deg, indomain_min, complete)
     maximize utility;
 
 output [
