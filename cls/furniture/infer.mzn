@@ -94,9 +94,19 @@ var DISTS: min_xdist = min(xdists);
 var DISTS: max_ydist = max(ydists);
 var DISTS: min_ydist = min(ydists);
 
-int: N_FEATURES = 4;
+%% minimum distance from sides
+var DISTS: left_side_dist = min(x);
+var DISTS: right_side_dist = SIDE - max([x[t] +dx[t] | t in TABLES]);
+var DISTS: lower_side_dist = min(y);
+var DISTS: upper_side_dist = SIDE - max([y[t] +dy[t] | t in TABLES]);
+
+
+
+
+
+int: N_FEATURES = 8;
 set of int: FEATURES = 1..N_FEATURES;
-array[FEATURES] of var DISTS: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist]);
+array[FEATURES] of var DISTS: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist,left_side_dist,right_side_dist,lower_side_dist,upper_side_dist]);
 
 
 
