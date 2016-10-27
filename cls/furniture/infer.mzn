@@ -37,6 +37,7 @@ var PASS: pass_lenght;
 constraint forall(t in TABLES)(x[t] + dx[t] - 1 <= SIDE);
 constraint forall(t in TABLES)(y[t] + dy[t] - 1 <= SIDE);
 
+constraint forall( t in TABLES)( not ( dx[t] = 2 /\ dy[t] = 2  )  );
 
 %% DOORS AND PATH BETWEEN DOORS %%
 
@@ -47,13 +48,23 @@ constraint pass_y[1] = door_y[1];
 constraint forall(i in 1..pass_lenght-1)(abs(pass_x[i] - pass_x[i+1]) + abs(pass_y[i] - pass_y[i+1]) = 1);
 constraint forall(i in pass_lenght..MAX_PASS)(pass_x[i] = door_x[2]);
 constraint forall(i in pass_lenght..MAX_PASS)(pass_y[i] = door_y[2]);
+constraint forall(i in DOORS, j in TABLES)( manhattan_distance_one(x[j],y[j],dx[j],dy[j],door_x[i],door_y[i]) >= 2 );
 
 int: MAX_FLAT_POS = SIDE*SIDE+SIDE;
 set of int: FLAT_POS = 1..MAX_FLAT_POS;
 set of int: POS_SIZES = 1..MAX_TABLE_SIDE*MAX_TABLE_SIDE*N_TABLES; 
 
+function var int: manhattan_distance(var int: x1,var int: y1,var int: dx1,var int: dy1,var int: x2,var int: y2,var int: dx2,var int: dy2) = 
+	max([x1 - x2 -dx2 ,x2 -x1 -dx1,0]) + max([y1 - y2 -dy2 ,y2 -y1 -dy1,0]) ; 
+
+
+function var int: manhattan_distance_one(var int: x1,var int: y1,var int: dx1,var int: dy1,var int: x2,var int: y2) = 
+	max([x1 - x2 -1 ,x2 -x1 -dx1,0]) + max([y1 - y2 -1 ,y2 -y1 -dy1,0]) ; 
+
 function var int: flat_pos(var int: x, var int: y) =
     x + SIDE * (y - 1);
+
+
 
 array[PASS] of var FLAT_POS: pass_pos = [flat_pos(pass_x[i], pass_y[i]) | i in PASS];
 array[POS_SIZES] of var int: occupied_indices = [min([dx[t] + 1 - i, dy[t] + 1 - j, 1]) * flat_pos(x[t] + i - 1, y[t] + j - 1) | i, j in TABLE_SIDE, t in TABLES];
@@ -102,14 +113,25 @@ var DISTS: lower_side_dist = min(y);
 var DISTS: upper_side_dist = SIDE - max([y[t] +dy[t] | t in TABLES]);
 
 
+array[TABLES] of var int: min_dist_sides = [ min([x[t],y[t],SIDE +1 - x[t] - dx[t], SIDE +1 - y[t] - dy[t] ]) | t in TABLES ];
+%array[TABLES] of var int: min_dist_walls = [ min( [ wall_x_dists[i,j] | i in WALLS  ] ++ [ wall_y_dists[i,j] | i in WALLS  ]  ) | j in TABLES ];
+array[TABLES] of var int: min_dist_walls = [ min( [max( wall_x_dists[i,j],  wall_y_dists[i,j]) | i in WALLS  ]  ) | j in TABLES ];
+
+
+var int: max_dist_from_walls_sides = max( [ min(min_dist_sides[i],min_dist_walls[i]) |  i in TABLES  ]   );
+var int: max_dist_from_walls = max( min_dist_walls  );
+var int: max_dist_from_sides = max( min_dist_sides );
+
+
+
 %var int: sum_xdists = sum(xdists);
 %var int: sum_ydists = sum(ydists);
 
 
 
-int: N_FEATURES = 8;
+int: N_FEATURES = 10;
 set of int: FEATURES = 1..N_FEATURES;
-array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist,left_side_dist,right_side_dist,lower_side_dist,upper_side_dist]);
+array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist,left_side_dist,right_side_dist,lower_side_dist,upper_side_dist,max_dist_from_walls,max_dist_from_sides]);
 %array[FEATURES] of var int: phi = array1d(FEATURES, [sum_xdists, min_xdist, sum_ydists, min_ydist,left_side_dist,right_side_dist,lower_side_dist,upper_side_dist]);
 
 
@@ -155,6 +177,11 @@ output [
         "side = " ++ show(SIDE) ++ ";\n" ++
         "wall_x_dists = " ++ show(wall_x_dists) ++ ";\n" ++
         "wall_y_dists = " ++ show(wall_y_dists) ++ ";\n" ++
+        "max_wall_sides_dist = " ++ show(max_dist_from_walls_sides) ++ ";\n" ++
+	"left_side_dist = " ++ show(left_side_dist) ++ ";\n " ++
+	"right_side_dist = " ++ show(right_side_dist) ++ ";\n " ++
+	"upper_side_dist = " ++ show(upper_side_dist) ++ ";\n " ++
+	"lower_side_dist = " ++ show(lower_side_dist) ++ ";\n " ++
         "utility = " ++ show(utility) ++ ";"
         ];
 
