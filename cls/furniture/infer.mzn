@@ -28,8 +28,8 @@ set of int: PASS = 1..MAX_PASS;
 
 int: N_DOORS = 2;
 set of int: DOORS = 1..N_DOORS;
-array[DOORS] of EDGE: door_x = [1, 5];
-array[DOORS] of EDGE: door_y = [5, SIDE];
+array[DOORS] of EDGE: door_x = [7, 4];
+array[DOORS] of EDGE: door_y = [1, SIDE];
 array[PASS] of var EDGE: pass_x;
 array[PASS] of var EDGE: pass_y;
 var PASS: pass_lenght;
@@ -62,19 +62,19 @@ constraint forall(i in 1..pass_lenght)(forall(j in  POS_SIZES)(pass_pos[i] != oc
 
 %% WALLS %%
 
-int: N_WALLS = 1;
+int: N_WALLS = 2;
 set of int: WALLS = 1..N_WALLS;
 
-array[WALLS] of int: wall_x = [1];
-array[WALLS] of int: wall_y = [1];
-array[WALLS] of int: wall_dx = [4];
-array[WALLS] of int: wall_dy = [4];
+array[WALLS] of int: wall_x = [1,8];
+array[WALLS] of int: wall_y = [1,SIDE - 2];
+array[WALLS] of int: wall_dx = [5,5];
+array[WALLS] of int: wall_dy = [6,3];
 
 array[WALLS, TABLES] of var DISTN: wall_x_dists = array2d(WALLS, TABLES, [max([wall_x[w] - x[t] - dx[t], x[t] - wall_x[w] - wall_dx[w]]) | w in WALLS, t in TABLES]);
 array[WALLS, TABLES] of var DISTN: wall_y_dists = array2d(WALLS, TABLES, [max([wall_y[w] - y[t] - dy[t], y[t] - wall_y[w] - wall_dy[w]]) | w in WALLS, t in TABLES]);
 
 constraint forall(i in WALLS, j in TABLES)(not (wall_x_dists[i, j] < 0 /\ wall_y_dists[i, j] < 0));
-
+constraint forall(i in WALLS, j in PASS)(not (pass_x[j] >= wall_x[i] /\ pass_x[j] < wall_x[i] + wall_dx[i] /\  pass_y[j] >= wall_y[i] /\ pass_y[j] < wall_y[i] + wall_dy[i] )   );
 
 
 %% PHI %%
@@ -87,7 +87,8 @@ array[TABLES_COMBS] of var DISTN: ydists_above = [y[t2] - y[t1] - dy[t1] | t1, t
 array[TABLES_COMBS] of var DISTN: ydists_below = [y[t1] - y[t2] - dy[t2] | t1, t2 in TABLES where t1 < t2];
 array[TABLES_COMBS] of var DISTS: ydists = [max([0, ydists_above[t], ydists_below[t]]) | t in TABLES_COMBS];
 
-constraint forall(t in TABLES_COMBS)(xdists[t] + ydists[t] >= 1);
+constraint forall(t1,t2 in TABLES where t1 < t2)( (xdists[t1 + t2 - 1] + ydists[t1 + t2 - 1]) >= (dx[t1] + dx[t2] + dy[t1] + dy[t2] - 3) );
+constraint forall (t in TABLES_COMBS)(xdists[t] + ydists[t] >= 1);
 
 var DISTS: max_xdist = max(xdists);
 var DISTS: min_xdist = min(xdists);
@@ -101,12 +102,15 @@ var DISTS: lower_side_dist = min(y);
 var DISTS: upper_side_dist = SIDE - max([y[t] +dy[t] | t in TABLES]);
 
 
+%var int: sum_xdists = sum(xdists);
+%var int: sum_ydists = sum(ydists);
 
 
 
 int: N_FEATURES = 8;
 set of int: FEATURES = 1..N_FEATURES;
-array[FEATURES] of var DISTS: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist,left_side_dist,right_side_dist,lower_side_dist,upper_side_dist]);
+array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist,left_side_dist,right_side_dist,lower_side_dist,upper_side_dist]);
+%array[FEATURES] of var int: phi = array1d(FEATURES, [sum_xdists, min_xdist, sum_ydists, min_ydist,left_side_dist,right_side_dist,lower_side_dist,upper_side_dist]);
 
 
 
@@ -128,8 +132,8 @@ int: U_LB = N_FEATURES * W_PHI_LB - 1000 * MAX_PASS;
 int: U_UB = N_FEATURES * W_PHI_UB - 1000;
 set of int: U_DOM = U_LB..U_UB;
 
-array[FEATURES] of var W_PHI_DOM: w_phi = array1d(FEATURES, [w1[f] * phi[f] | f in FEATURES]);
-var U_DOM: utility = sum(w_phi) - 1000 * pass_lenght;
+array[FEATURES] of var int: w_phi = array1d(FEATURES, [w1[f] * phi[f] | f in FEATURES]);
+var int: utility = sum(w_phi) - 10000* pass_lenght;
 
 
 solve maximize utility;
