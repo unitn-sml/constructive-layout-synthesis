@@ -51,10 +51,14 @@ class Furniture(Problem):
                               fzn_fn=pymzn.opturion)[0]
 
     def improve(self, x, w):
-        return pymzn.minizinc(self.improve_model,
-                              data={**self._data, **input_x(x), 'w': w},
-                              output_vars=['x', 'y', 'dx', 'dy'],
-                              mzn_globals_dir='opturion-cpx',
-                              serialize=True, keep=True,
-                              fzn_fn=pymzn.opturion)[0]
+        try:
+            return pymzn.minizinc(self.improve_model,
+                                  data={**self._data, **input_x(x), 'w': w},
+                                  output_vars=['x', 'y', 'dx', 'dy'],
+                                  mzn_globals_dir='opturion-cpx',
+                                  serialize=True, keep=True,
+                                  fzn_fn=pymzn.opturion)[0]
+        except pymzn.MiniZincUnsatisfiableError:
+            # when no improvement possible for noisy users
+            return x
 

@@ -65,7 +65,7 @@ class User(object):
         The utility of x_star.
     """
 
-    def __init__(self, problem, w_star, uid=0):
+    def __init__(self, problem, w_star, uid=0, noise=None, rng=None):
         if w_star.shape != (problem.num_features,):
             raise ValueError('Mismatching w_star')
 
@@ -74,6 +74,8 @@ class User(object):
         self._uid = uid
         self.x_star = None
         self.u_star = None
+        self.noise = noise
+        self.rng = rng
 
     def init(self):
         self.x_star = self.problem.infer(self.w_star)
@@ -103,7 +105,11 @@ class User(object):
 
     def improve(self, x):
         """Computes an improvement for x."""
-        return self.problem.improve(x, self.w_star)
+        w_star = np.copy(self.w_star)
+        if self.noise:
+            nnz = w_star.nonzero()[0]
+            w_star[nnz] += self.rng.normal(0, self.noise, size=len(nnz))
+        return self.problem.improve(x, w_star)
 
 
 def pp(problem, user, max_iters=100):
