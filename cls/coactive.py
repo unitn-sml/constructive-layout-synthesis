@@ -92,9 +92,13 @@ class User(object):
     def uid(self):
         return self._uid
 
+    def utility(self, x):
+        """Returns the utility of object x."""
+        return self.problem.utility(x, self.w_star)
+
     def regret(self, x):
         """Returns the regret of object x."""
-        return self.u_star - self.problem.utility(x, self.w_star)
+        return self.u_star - self.utility(x)
 
     def improve(self, x):
         """Computes an improvement for x."""
@@ -141,7 +145,11 @@ def pp(problem, user, max_iters=100):
         t0 = time()
         x = problem.infer(w)
         t_infer = time() - t0
+        u_x = user.utility(x)
+        phi_x = problem.phi(x)
         log.debug('uid = {}, it = {}, x = {}', user.uid, i, x)
+        log.debug('uid = {}, it = {}, phi_x = {}', user.uid, i, phi_x)
+        log.debug('uid = {}, it = {}, u_x = {}', user.uid, i, u_x)
         log.debug('uid = {}, it = {}, t_infer = {}', user.uid, i, t_infer)
 
         regret = user.regret(x)
@@ -157,12 +165,16 @@ def pp(problem, user, max_iters=100):
         t1 = time()
         x_bar = user.improve(x)
         t_improve = time() - t1
+        phi_x_bar = problem.phi(x_bar)
+        u_x_bar = user.utility(x_bar)
         log.debug('uid = {}, it = {}, x_bar = {}', user.uid, i, x_bar)
+        log.debug('uid = {}, it = {}, phi_x_bar = {}', user.uid, i, phi_x_bar)
+        log.debug('uid = {}, it = {}, u_x_bar = {}', user.uid, i, u_x_bar)
         log.debug('uid = {}, it = {}, t_improve = {}', user.uid, i, t_improve)
 
         # Model update
         t2 = time()
-        w += problem.phi(x_bar) - problem.phi(x)
+        w += phi_x_bar - phi_x
         t_update = time() - t2
         log.debug('uid = {}, it = {}, t_update = {}', user.uid, i, t_update)
 
