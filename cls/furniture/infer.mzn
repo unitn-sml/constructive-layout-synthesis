@@ -39,9 +39,10 @@ constraint forall(t in TABLES)(y[t] + dy[t] - 1 <= SIDE);
 
 constraint forall( t in TABLES)( not ( dx[t] = 2 /\ dy[t] = 2  )  );
 
+
+
 %% DOORS AND PATH BETWEEN DOORS %%
 
-constraint forall(d in DOORS)(assert((door_x[d] = 1) \/ (door_x[d] = SIDE) \/ (door_y[d] = 1) \/ (door_y[d] = SIDE), "door nr. "++ show(d) ++  " isn't attached to a wall "));
 
 constraint pass_x[1] = door_x[1];
 constraint pass_y[1] = door_y[1];
@@ -108,7 +109,7 @@ var DISTS: min_ydist = min(ydists);
 
 %% minimum distance from sides
 var DISTS: left_side_dist = min(x);
-var DISTS: right_side_dist = SIDE - max([x[t] +dx[t] | t in TABLES]);
+var DISTS: right_side_dist = SIDE + 1 - max([x[t] + dx[t] | t in TABLES]);
 var DISTS: lower_side_dist = min(y);
 var DISTS: upper_side_dist = SIDE - max([y[t] +dy[t] | t in TABLES]);
 
@@ -127,8 +128,6 @@ var int: max_dist_from_sides = max( min_dist_sides );
 %var int: sum_xdists = sum(xdists);
 %var int: sum_ydists = sum(ydists);
 
-
-
 int: N_FEATURES = 10;
 set of int: FEATURES = 1..N_FEATURES;
 array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist,left_side_dist,right_side_dist,lower_side_dist,upper_side_dist,max_dist_from_walls,max_dist_from_sides]);
@@ -136,26 +135,12 @@ array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_y
 
 
 
-
 %% UTILITY %%
 
 array[FEATURES] of float: w;
-array[FEATURES] of int: w1 = array1d(FEATURES, [round(w[f]*100) | f in FEATURES]);
-
-int: W_LB = lb_array(w1);
-int: W_UB = ub_array(w1);
-int: PHI_LB = 0;
-int: PHI_UB = SIDE;
-int: W_PHI_UB = max(W_LB*PHI_LB, W_UB*PHI_UB);
-int: W_PHI_LB = min([W_LB*PHI_LB, W_UB*PHI_LB, W_LB*PHI_UB, W_UB*PHI_UB]);
-set of int: W_PHI_DOM = W_PHI_LB..W_PHI_UB;
-
-int: U_LB = N_FEATURES * W_PHI_LB - 1000 * MAX_PASS;
-int: U_UB = N_FEATURES * W_PHI_UB - 1000;
-set of int: U_DOM = U_LB..U_UB;
-
+array[FEATURES] of int: w1 = array1d(FEATURES, [round(w[f]*10000) | f in FEATURES]);
 array[FEATURES] of var int: w_phi = array1d(FEATURES, [w1[f] * phi[f] | f in FEATURES]);
-var int: utility = sum(w_phi) - 10000* pass_lenght;
+var int: utility = sum(w_phi);
 
 
 solve maximize utility;
@@ -178,10 +163,11 @@ output [
         "wall_x_dists = " ++ show(wall_x_dists) ++ ";\n" ++
         "wall_y_dists = " ++ show(wall_y_dists) ++ ";\n" ++
         "max_wall_sides_dist = " ++ show(max_dist_from_walls_sides) ++ ";\n" ++
-	"left_side_dist = " ++ show(left_side_dist) ++ ";\n " ++
-	"right_side_dist = " ++ show(right_side_dist) ++ ";\n " ++
-	"upper_side_dist = " ++ show(upper_side_dist) ++ ";\n " ++
-	"lower_side_dist = " ++ show(lower_side_dist) ++ ";\n " ++
+        "left_side_dist = " ++ show(left_side_dist) ++ ";\n " ++
+        "right_side_dist = " ++ show(right_side_dist) ++ ";\n " ++
+        "upper_side_dist = " ++ show(upper_side_dist) ++ ";\n " ++
+        "lower_side_dist = " ++ show(lower_side_dist) ++ ";\n " ++
+        "phi = " ++ show(phi) ++ ";\n" ++
         "utility = " ++ show(utility) ++ ";"
         ];
 

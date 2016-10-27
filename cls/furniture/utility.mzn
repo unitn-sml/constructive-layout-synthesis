@@ -22,7 +22,7 @@ array[TABLES] of TABLE_SIDE: input_dy;
 array[TABLES_COMBS] of int: input_xdists = [max(0, input_x[t2] - input_x[t1] - input_dx[t1]) | t1, t2 in TABLES where t1 < t2];
 array[TABLES_COMBS] of int: input_ydists_above = [input_y[t2] - input_y[t1] - input_dy[t1] | t1, t2 in TABLES where t1 < t2];
 array[TABLES_COMBS] of int: input_ydists_below = [input_y[t1] - input_y[t2] - input_dy[t2] | t1, t2 in TABLES where t1 < t2];
-array[TABLES_COMBS] of int: input_ydists = [max([0, input_ydists_above[t], input_ydists_below[t]]) | t in TABLES_COMBS];
+array[TABLES_COMBS] of int: input_ydists = [max([0, input_ydists_above[t], input_ydists_below[t]]) | t TABLES_COMBS];
 
 int: input_max_xdist = max(input_xdists);
 int: input_min_xdist = min(input_xdists);
@@ -38,11 +38,23 @@ int: input_upper_side_dist = SIDE + 1 - max([input_y[t] + input_dy[t] | t in TAB
 
 array[FEATURES] of int: phi = [input_max_xdist, input_min_xdist, input_max_ydist, input_min_ydist, input_left_side_dist, input_right_side_dist, input_lower_side_dist, input_upper_side_dist];
 
+array[FEATURES] of float: w;
+array[FEATURES] of int: w1 = array1d(FEATURES, [round(w[f]*10000) | f in FEATURES]);
+array[FEATURES] of int: w_phi = array1d(FEATURES, [w1[f] * phi[f] | f in FEATURES]);
+int: utility = sum(w_phi);
+
 %% SOLVE %%
 
 
 
 solve satisfy;
 
-output ["phi = " ++ show(phi) ++ ";"];
+output [
+        "phi = " ++ show(phi) ++ ";\n" ++
+        "xdists = " ++ show(input_xdists) ++ ";\n" ++
+        "ydists_above = " ++ show(input_ydists_above) ++ ";\n" ++
+        "ydists_below = " ++ show(input_ydists_below) ++ ";\n" ++
+        "ydists = " ++ show(input_ydists) ++ ";\n" ++
+        "utility = " ++ show(utility) ++ ";"
+       ];
 
