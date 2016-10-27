@@ -44,10 +44,15 @@ def experiment(args):
         users = [User(problem, rng.normal(size=(problem.num_features,)),
                       uid=uid) for uid in range(1, args['users'] + 1)]
 
+    traces = []
     start_user = args['user']
     for u in range(start_user, len(users)):
         user = users[u]
         trace = pp(problem, user, max_iters=args['iters'])
+        traces.append((u, trace))
+
+    with open(args['output_file'], 'wb') as f:
+        pickle.dump(traces, f)
 
 
 if __name__ == '__main__':
@@ -60,6 +65,8 @@ if __name__ == '__main__':
                         help='The problem')
     parser.add_argument('-W', '--weights',
                         help='File with true user weights')
+    parser.add_argument('-O', '--output-file', default='trace.pickle',
+                        help='File to dump the experiment trace')
     parser.add_argument('-u', '--user', type=int, default=0, 
                         help='User to start from')
     parser.add_argument('-U', '--users', type=int, default=20, 
