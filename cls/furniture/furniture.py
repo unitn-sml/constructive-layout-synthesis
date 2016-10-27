@@ -39,8 +39,8 @@ class Furniture(Problem):
                               data={**self._data, **input_x(x)},
                               output_vars=['phi'], serialize=True,
                               mzn_globals_dir='opturion-cpx', keep=True,
-                              fzn_fn=pymzn.opturion)
-        self._phis[_frx] = np.array(phi)
+                              fzn_fn=pymzn.opturion)[0]['phi']
+        self._phis[_frx] = np.array(_phi)
         return self._phis[_frx]
 
     def infer(self, w):
