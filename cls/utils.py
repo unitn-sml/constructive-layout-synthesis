@@ -6,39 +6,38 @@ import numpy as np
 
 """Logging utilities"""
 
-class NpMessage(object):
-    def __init__(self, fmt, args, np_precision=None, np_suppress_small=None):
+def array2str(a):
+    s = np.array2string(a, max_line_width=np.inf, separator=',',
+                        precision=None, suppress_small=None)
+    return s.replace('\n', '')
+
+
+def x2str(x):
+    return sorted(x.items())
+
+
+class LazyMessage(object):
+    def __init__(self, fmt, args):
         self.fmt = fmt
         self.args = args
-        self.np_precision = np_precision
-        self.np_suppress_small = np_suppress_small
 
     def __str__(self):
-        args = [self.str_array(arg) if isinstance(arg, np.ndarray) else arg
-                for arg in self.args]
-        return self.fmt.format(*args)
-
-    def str_array(self, a):
-        s = np.array2string(a, max_line_width=np.inf, separator=',',
-                            precision=self.np_precision,
-                            suppress_small=self.np_suppress_small)
-        return s.replace('\n', '')
-
+        _args = [arg() if hasattr(arg, '__call__') else arg
+                 for arg in self.args]
+        return self.fmt.format(*_args)
 
 class BracesAdapter(logging.LoggerAdapter):
-    def __init__(self, logger, extra=None,
-                 np_precision=None, np_suppress_small=None):
+    def __init__(self, logger, extra=None):
         super().__init__(logger, extra or {})
-        self.np_precision = np_precision
-        self.np_suppress_small = np_suppress_small
 
     def log(self, level, msg, *args, **kwargs):
         if self.isEnabledFor(level):
             msg, kwargs = self.process(msg, kwargs)
-            m = NpMessage(msg, args, np_precision=self.np_precision, 
-                        np_suppress_small=self.np_suppress_small)
-            self.logger._log(level, m, (), **kwargs)
+            self.logger._log(level, LazyMessage(msg, args), (), **kwargs)
 
+
+def get_logger(name):
+    return BracesAdapter(logging.getLogger(name))
 
 
 """Wrangling utilities"""

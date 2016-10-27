@@ -1,11 +1,10 @@
 # -*- encoding: utf-8 -*-
 
-import logging
 import numpy as np
 
 from time import time
-from cls.utils import BracesAdapter
-
+from cls.utils import get_logger, array2str, x2str
+from functools import partial
 
 class Problem(object):
     """Base class for all problems.
@@ -79,13 +78,15 @@ class User(object):
     def init(self):
         self.x_star = self.problem.infer(self.w_star)
         self.u_star = self.problem.utility(self.x_star, self.w_star)
-
         phi_x_star = self.problem.phi(self.x_star)
 
-        log = BracesAdapter(logging.getLogger(__name__))
-        log.debug('uid = {}, w_star = {}', self._uid, self.w_star)
-        log.debug('uid = {}, x_star = {}', self._uid, self.x_star)
-        log.debug('uid = {}, phi_x_star = {}', self._uid, phi_x_star)
+        log = get_logger(__name__)
+        log.debug('uid = {}, w_star = {}', self._uid,
+                  partial(array2str, self.w_star))
+        log.debug('uid = {}, x_star = {}', self._uid,
+                  partial(x2str, self.x_star))
+        log.debug('uid = {}, phi_x_star = {}', self._uid,
+                  partial(array2str, phi_x_star))
         log.debug('uid = {}, u_star = {}', self._uid, self.u_star)
 
     @property
@@ -131,7 +132,7 @@ def pp(problem, user, max_iters=100):
     ----------
     .. [1] Shivaswamy and Joachims, *Coactive Learning*, JAIR 53 (2015)
     """
-    log = BracesAdapter(logging.getLogger(__name__))
+    log = get_logger(__name__)
 
     user.init()
 
@@ -147,8 +148,10 @@ def pp(problem, user, max_iters=100):
         t_infer = time() - t0
         u_x = user.utility(x)
         phi_x = problem.phi(x)
-        log.debug('uid = {}, it = {}, x = {}', user.uid, i, x)
-        log.debug('uid = {}, it = {}, phi_x = {}', user.uid, i, phi_x)
+        log.debug('uid = {}, it = {}, x = {}', user.uid, i,
+                  partial(x2str, x))
+        log.debug('uid = {}, it = {}, phi_x = {}', user.uid, i,
+                  partial(array2str, phi_x))
         log.debug('uid = {}, it = {}, u_x = {}', user.uid, i, u_x)
         log.debug('uid = {}, it = {}, t_infer = {}', user.uid, i, t_infer)
 
@@ -167,8 +170,10 @@ def pp(problem, user, max_iters=100):
         t_improve = time() - t1
         phi_x_bar = problem.phi(x_bar)
         u_x_bar = user.utility(x_bar)
-        log.debug('uid = {}, it = {}, x_bar = {}', user.uid, i, x_bar)
-        log.debug('uid = {}, it = {}, phi_x_bar = {}', user.uid, i, phi_x_bar)
+        log.debug('uid = {}, it = {}, x_bar = {}', user.uid, i,
+                  partial(x2str, x_bar))
+        log.debug('uid = {}, it = {}, phi_x_bar = {}', user.uid, i,
+                  partial(array2str, phi_x_bar))
         log.debug('uid = {}, it = {}, u_x_bar = {}', user.uid, i, u_x_bar)
         log.debug('uid = {}, it = {}, t_improve = {}', user.uid, i, t_improve)
 
