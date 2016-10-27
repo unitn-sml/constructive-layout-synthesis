@@ -27,7 +27,7 @@ class Problem(object):
 
     def init_w(self):
         """Initializes a new feature vector of shape (self.num_features,)."""
-        return np.zeros(self.num_features)
+        return np.ones(self.num_features)
 
     def phi(self, x):
         """Returns the feature vector of x."""
