@@ -73,8 +73,20 @@ class User(object):
         self.problem = problem
         self.w_star = w_star
         self._uid = uid
+        self.x_star = None
+        self.u_star = None
+
+    def init(self):
         self.x_star = self.problem.infer(self.w_star)
         self.u_star = self.problem.utility(self.x_star, self.w_star)
+
+        phi_x_star = self.problem.phi(self.x_star)
+
+        log = BracesAdapter(logging.getLogger(__name__))
+        log.debug('uid = {}, w_star = {}', self._uid, self.w_star)
+        log.debug('uid = {}, x_star = {}', self._uid, self.x_star)
+        log.debug('uid = {}, phi_x_star = {}', self._uid, phi_x_star)
+        log.debug('uid = {}, u_star = {}', self._uid, self.u_star)
 
     @property
     def uid(self):
@@ -116,6 +128,8 @@ def pp(problem, user, max_iters=100):
     .. [1] Shivaswamy and Joachims, *Coactive Learning*, JAIR 53 (2015)
     """
     log = BracesAdapter(logging.getLogger(__name__))
+
+    user.init()
 
     msg = 'uid = {}, it = {}, t = {}, reg = {}'
     w = problem.init_w()
