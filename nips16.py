@@ -44,7 +44,9 @@ def experiment(args):
         users = [User(problem, rng.normal(size=(problem.num_features,)),
                       uid=uid) for uid in range(1, args['users'] + 1)]
 
-    for user in users:
+    start_user = args['user']
+    for u in range(start_user, len(users)):
+        user = users[u]
         trace = pp(problem, user, max_iters=args['iters'])
 
 
@@ -58,6 +60,8 @@ if __name__ == '__main__':
                         help='The problem')
     parser.add_argument('-W', '--weights',
                         help='File with true user weights')
+    parser.add_argument('-u', '--user', type=int, default=0, 
+                        help='User to start from')
     parser.add_argument('-U', '--users', type=int, default=20, 
                         help='Number of users')
     parser.add_argument('-T', '--iters', type=int, default=100,
