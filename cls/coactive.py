@@ -166,7 +166,7 @@ def pp(problem, user, max_iters=100):
 
         if regret == 0.0:
             log.debug('outcome: user satisfied')
-            trace.append((regret, t_infer))
+            trace.append((regret, t_infer, w.copy()))
             print(msg.format(user.uid, i, t_infer, regret))
             break
 
@@ -192,7 +192,7 @@ def pp(problem, user, max_iters=100):
         t_elapsed = t_infer + t_update
         log.debug('uid = {}, it = {}, t_elapsed = {}', user.uid, i, t_elapsed)
 
-        trace.append((regret, t_elapsed))
+        trace.append((regret, t_elapsed, w.copy()))
         print(msg.format(user.uid, i, t_elapsed, regret))
 
     else:
