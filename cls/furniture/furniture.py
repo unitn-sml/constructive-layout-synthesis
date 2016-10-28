@@ -3,7 +3,7 @@
 import pymzn
 import numpy as np
 
-from cls.utils import freeze, input_x
+from cls.utils import freeze, input_x, input_star_x
 from cls.coactive import Problem
 
 
@@ -23,7 +23,7 @@ class Furniture(Problem):
     phi_model = 'cls/furniture/phi.mzn'
 
     def __init__(self, canvas_size=12, num_tables=6, **kwargs):
-        num_features = 8
+        num_features = 10
         super().__init__(num_features)
 
         self._data = {'SIDE': canvas_size, 'N_TABLES': num_tables}
@@ -50,10 +50,12 @@ class Furniture(Problem):
                               serialize=True, keep=True, 
                               fzn_fn=pymzn.opturion)[0]
 
-    def improve(self, x, w):
+    def improve(self, x, x_star, w, alpha=0.1):
         try:
             return pymzn.minizinc(self.improve_model,
-                                  data={**self._data, **input_x(x), 'w': w},
+                                  data={**self._data, **input_x(x), 'w': w,
+                                        **input_star_x(x_star),
+                                        'ALPHA': alpha},
                                   output_vars=['x', 'y', 'dx', 'dy'],
                                   mzn_globals_dir='opturion-cpx',
                                   serialize=True, keep=True,

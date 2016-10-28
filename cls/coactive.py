@@ -36,7 +36,7 @@ class Problem(object):
         """Infers optimal object."""
         raise NotImplementedError()
 
-    def improve(self, x, w):
+    def improve(self, x, x_star, w, alpha=0.1):
        """Makes a minimal improvement to x w.r.t. w."""
        raise NotImplementedError()
 
@@ -65,7 +65,8 @@ class User(object):
         The utility of x_star.
     """
 
-    def __init__(self, problem, w_star, uid=0, noise=None, rng=None):
+    def __init__(self, problem, w_star, uid=0, noise=None, rng=None,
+                 alpha=0.1):
         if w_star.shape != (problem.num_features,):
             raise ValueError('Mismatching w_star')
 
@@ -76,6 +77,7 @@ class User(object):
         self.u_star = None
         self.noise = noise
         self.rng = rng
+        self.alpha = alpha
 
     def init(self):
         self.x_star = self.problem.infer(self.w_star)
@@ -109,7 +111,7 @@ class User(object):
         if self.noise:
             nnz = w_star.nonzero()[0]
             w_star[nnz] += self.rng.normal(0, self.noise, size=len(nnz))
-        return self.problem.improve(x, w_star)
+        return self.problem.improve(x, self.x_star, w_star, self.alpha)
 
 
 def pp(problem, user, max_iters=100):

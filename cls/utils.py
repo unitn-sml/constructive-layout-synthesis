@@ -56,6 +56,9 @@ def freeze(x):
 def input_x(x):
     return {'input_' + k: v for k, v in x.items()}
 
+def input_star_x(x):
+    return {'input_star_' + k: v for k, v in x.items()}
+
 
 def subdict(d, nokeys):
     return {k: v for k, v in d.items() if k in d.keys() - set(nokeys)}
