@@ -28,8 +28,8 @@ set of int: PASS = 1..MAX_PASS;
 
 int: N_DOORS = 2;
 set of int: DOORS = 1..N_DOORS;
-array[DOORS] of EDGE: door_x = [7, 4];
-array[DOORS] of EDGE: door_y = [1, SIDE];
+array[DOORS] of EDGE: door_x ;
+array[DOORS] of EDGE: door_y ;
 array[PASS] of var EDGE: pass_x;
 array[PASS] of var EDGE: pass_y;
 var PASS: pass_lenght;
@@ -62,6 +62,10 @@ function var int: manhattan_distance(var int: x1,var int: y1,var int: dx1,var in
 function var int: manhattan_distance_one(var int: x1,var int: y1,var int: dx1,var int: dy1,var int: x2,var int: y2) = 
 	max([x1 - x2 -1 ,x2 -x1 -dx1,0]) + max([y1 - y2 -1 ,y2 -y1 -dy1,0]) ; 
 
+
+function var int: manhattan_distance_one(var int: x1,var int: y1,var int: dx1,var int: dy1,int: x2,int: y2) = 
+	max([x1 - x2 -1 ,x2 -x1 -dx1,0]) + max([y1 - y2 -1 ,y2 -y1 -dy1,0]) ; 
+
 function var int: flat_pos(var int: x, var int: y) =
     x + SIDE * (y - 1);
 
@@ -74,19 +78,25 @@ constraint forall(i in 1..pass_lenght)(forall(j in  POS_SIZES)(pass_pos[i] != oc
 
 %% WALLS %%
 
-int: N_WALLS = 2;
+int: N_WALLS;
 set of int: WALLS = 1..N_WALLS;
 
-array[WALLS] of int: wall_x = [1,8];
-array[WALLS] of int: wall_y = [1,SIDE - 2];
-array[WALLS] of int: wall_dx = [5,5];
-array[WALLS] of int: wall_dy = [6,3];
+array[WALLS] of int: wall_x ;
+array[WALLS] of int: wall_y ;
+array[WALLS] of int: wall_dx ;
+array[WALLS] of int: wall_dy ;
 
 array[WALLS, TABLES] of var DISTN: wall_x_dists = array2d(WALLS, TABLES, [max([wall_x[w] - x[t] - dx[t], x[t] - wall_x[w] - wall_dx[w]]) | w in WALLS, t in TABLES]);
 array[WALLS, TABLES] of var DISTN: wall_y_dists = array2d(WALLS, TABLES, [max([wall_y[w] - y[t] - dy[t], y[t] - wall_y[w] - wall_dy[w]]) | w in WALLS, t in TABLES]);
 
 constraint forall(i in WALLS, j in TABLES)(not (wall_x_dists[i, j] < 0 /\ wall_y_dists[i, j] < 0));
 constraint forall(i in WALLS, j in PASS)(not (pass_x[j] >= wall_x[i] /\ pass_x[j] < wall_x[i] + wall_dx[i] /\  pass_y[j] >= wall_y[i] /\ pass_y[j] < wall_y[i] + wall_dy[i] )   );
+
+
+
+
+
+
 
 
 %% PHI %%
@@ -107,31 +117,23 @@ var DISTS: min_xdist = min(xdists);
 var DISTS: max_ydist = max(ydists);
 var DISTS: min_ydist = min(ydists);
 
-%% minimum distance from sides
-var DISTS: left_side_dist = min(x);
-var DISTS: right_side_dist = SIDE + 1 - max([x[t] + dx[t] | t in TABLES]);
-var DISTS: lower_side_dist = min(y);
-var DISTS: upper_side_dist = SIDE - max([y[t] +dy[t] | t in TABLES]);
 
 
 array[TABLES] of var int: min_dist_sides = [ min([x[t],y[t],SIDE +1 - x[t] - dx[t], SIDE +1 - y[t] - dy[t] ]) | t in TABLES ];
-%array[TABLES] of var int: min_dist_walls = [ min( [ wall_x_dists[i,j] | i in WALLS  ] ++ [ wall_y_dists[i,j] | i in WALLS  ]  ) | j in TABLES ];
 array[TABLES] of var int: min_dist_walls = [ min( [max( wall_x_dists[i,j],  wall_y_dists[i,j]) | i in WALLS  ]  ) | j in TABLES ];
 
 
-var int: max_dist_from_walls_sides = max( [ min(min_dist_sides[i],min_dist_walls[i]) |  i in TABLES  ]   );
 var int: max_dist_from_walls = max( min_dist_walls  );
 var int: max_dist_from_sides = max( min_dist_sides );
 
+var int: min_dist_from_walls = min( min_dist_walls  );
+var int: min_dist_from_sides = min( min_dist_sides );
 
 
-%var int: sum_xdists = sum(xdists);
-%var int: sum_ydists = sum(ydists);
 
-int: N_FEATURES = 10;
+int: N_FEATURES = 8;
 set of int: FEATURES = 1..N_FEATURES;
-array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist,left_side_dist,right_side_dist,lower_side_dist,upper_side_dist,max_dist_from_walls,max_dist_from_sides]);
-%array[FEATURES] of var int: phi = array1d(FEATURES, [sum_xdists, min_xdist, sum_ydists, min_ydist,left_side_dist,right_side_dist,lower_side_dist,upper_side_dist]);
+array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist,min_ydist,max_dist_from_walls,min_dist_from_walls,max_dist_from_sides,min_dist_from_sides]);
 
 
 
@@ -162,11 +164,6 @@ output [
         "side = " ++ show(SIDE) ++ ";\n" ++
         "wall_x_dists = " ++ show(wall_x_dists) ++ ";\n" ++
         "wall_y_dists = " ++ show(wall_y_dists) ++ ";\n" ++
-        "max_wall_sides_dist = " ++ show(max_dist_from_walls_sides) ++ ";\n" ++
-        "left_side_dist = " ++ show(left_side_dist) ++ ";\n " ++
-        "right_side_dist = " ++ show(right_side_dist) ++ ";\n " ++
-        "upper_side_dist = " ++ show(upper_side_dist) ++ ";\n " ++
-        "lower_side_dist = " ++ show(lower_side_dist) ++ ";\n " ++
         "phi = " ++ show(phi) ++ ";\n" ++
         "utility = " ++ show(utility) ++ ";"
         ];
