@@ -12,6 +12,7 @@ set of int: DISTN = -SIDE..SIDE;
 
 int: N_TABLES;
 set of int: TABLES = 1..N_TABLES;
+set of int: TABLES0 = 0..N_TABLES;
 
 int: MAX_TABLE_SIDE = 2;
 set of int: TABLE_SIDE = 1..MAX_TABLE_SIDE;
@@ -78,6 +79,12 @@ array[WALLS, TABLES] of var DISTN: wall_y_dists = array2d(WALLS, TABLES, [max([w
 constraint forall(i in WALLS, j in TABLES)(not (wall_x_dists[i, j] < 0 /\ wall_y_dists[i, j] < 0));
 
 
+%% TABLE TYPES %%
+
+array[TABLES] of var 1..2: table_types = [dx[t] + dy[t] - 1 | t in TABLES];
+array[1..2] of var TABLES0: table_types_count;
+constraint global_cardinality_closed(table_types, [1, 2], table_types_count);
+
 
 %% PHI %%
 
@@ -96,11 +103,6 @@ var int: min_xdist = min(xdists);
 var int: max_ydist = max(ydists);
 var int: min_ydist = min(ydists);
 
-%% minimum distance from sides
-var int: left_side_dist = min(x);
-var int: right_side_dist = SIDE + 1 - max([x[t] + dx[t] | t in TABLES]);
-var int: lower_side_dist = min(y);
-var int: upper_side_dist = SIDE + 1 - max([y[t] + dy[t] | t in TABLES]);
 
 array[TABLES] of var int: min_dist_sides = [min([x[t], y[t], SIDE + 1 - x[t] - dx[t], SIDE + 1 - y[t] - dy[t]]) | t in TABLES];
 array[TABLES] of var int: min_dist_walls = [min([max(wall_x_dists[i, j], wall_y_dists[i, j]) | i in WALLS]) | j in TABLES];
@@ -109,11 +111,13 @@ var int: max_dist_from_walls_sides = max([min(min_dist_sides[i], min_dist_walls[
 var int: max_dist_from_walls = max(min_dist_walls);
 var int: max_dist_from_sides = max(min_dist_sides);
 
+var int: min_dist_from_walls = min(min_dist_walls);
+var int: min_dist_from_sides = min(min_dist_sides);
+
 
 int: N_FEATURES = 10;
 set of int: FEATURES = 1..N_FEATURES;
-array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist, left_side_dist, right_side_dist, lower_side_dist, upper_side_dist, max_dist_from_walls, max_dist_from_sides]);
-%array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist, left_side_dist, right_side_dist, lower_side_dist, upper_side_dist]);
+array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist, max_dist_from_walls, min_dist_from_walls, max_dist_from_sides, min_dist_from_sides, table_types_count[1], table_types_count[2]]);
 
 
 %% INPUT X %%
@@ -149,8 +153,17 @@ int: input_max_dist_from_walls_sides = max([min(input_min_dist_sides[i], input_m
 int: input_max_dist_from_walls = max(input_min_dist_walls);
 int: input_max_dist_from_sides = max(input_min_dist_sides);
 
-array[FEATURES] of int: input_phi = array1d(FEATURES, [input_max_xdist, input_min_xdist, input_max_ydist, input_min_ydist, input_left_side_dist, input_right_side_dist, input_lower_side_dist, input_upper_side_dist, input_max_dist_from_walls, input_max_dist_from_sides]);
-%array[FEATURES] of int: input_phi = [input_max_xdist, input_min_xdist, input_max_ydist, input_min_ydist, input_left_side_dist, input_right_side_dist, input_lower_side_dist, input_upper_side_dist];
+
+int: input_min_dist_from_walls = min(input_min_dist_walls);
+int: input_min_dist_from_sides = min(input_min_dist_sides);
+
+
+array[TABLES] of 1..2: input_table_types = [input_dx[t] + input_dy[t] - 1 | t in TABLES];
+array[1..2] of TABLES0: input_table_types_count = global_cardinality_closed(input_table_types, [1, 2]);
+
+
+array[FEATURES] of int: input_phi = array1d(FEATURES, [input_max_xdist, input_min_xdist, input_max_ydist, input_min_ydist, input_max_dist_from_walls, input_min_dist_from_walls, input_max_dist_from_sides, input_min_dist_from_sides,input_table_types_count[1], input_table_types_count[2]]);
+
 array[FEATURES] of int: input_w_phi = [w1[f] * input_phi[f] | f in FEATURES];
 int: input_utility = sum(input_w_phi);
 
@@ -168,18 +181,10 @@ array[TABLES_COMBS] of int: input_star_ydists_above = [input_star_y[t2] - input_
 array[TABLES_COMBS] of int: input_star_ydists_below = [input_star_y[t1] - input_star_y[t2] - input_star_dy[t2] | t1, t2 in TABLES where t1 < t2];
 array[TABLES_COMBS] of int: input_star_ydists = [max([0, input_star_ydists_above[t], input_star_ydists_below[t]]) | t in TABLES_COMBS];
 
-int: input_star_max_xdist = max(input_star_xdists);
-int: input_star_min_xdist = min(input_star_xdists);
-int: input_star_max_ydist = max(input_star_ydists);
-int: input_star_min_ydist = min(input_star_ydists);
 
 array[WALLS, TABLES] of DISTN: input_star_wall_x_dists = array2d(WALLS, TABLES, [max([wall_x[w] - input_star_x[t] - input_star_dx[t], input_star_x[t] - wall_x[w] - wall_dx[w]]) | w in WALLS, t in TABLES]);
 array[WALLS, TABLES] of DISTN: input_star_wall_y_dists = array2d(WALLS, TABLES, [max([wall_y[w] - input_star_y[t] - input_star_dy[t], input_star_y[t] - wall_y[w] - wall_dy[w]]) | w in WALLS, t in TABLES]);
 
-int: input_star_left_side_dist = min(input_star_x);
-int: input_star_right_side_dist = SIDE + 1 - max([input_star_x[t] + input_star_dx[t] | t in TABLES]);
-int: input_star_lower_side_dist = min(input_star_y);
-int: input_star_upper_side_dist = SIDE + 1 - max([input_star_y[t] + input_star_dy[t] | t in TABLES]);
 
 array[TABLES] of int: input_star_min_dist_sides = [min([input_star_x[t], input_star_y[t], SIDE + 1 - input_star_x[t] - input_star_dx[t], SIDE + 1 - input_star_y[t] - input_star_dy[t]]) | t in TABLES];
 array[TABLES] of int: input_star_min_dist_walls = [min([max(input_star_wall_x_dists[i,j], input_star_wall_y_dists[i,j]) | i in WALLS]) | j in TABLES];
@@ -188,8 +193,16 @@ int: input_star_max_dist_from_walls_sides = max([min(input_star_min_dist_sides[i
 int: input_star_max_dist_from_walls = max(input_star_min_dist_walls);
 int: input_star_max_dist_from_sides = max(input_star_min_dist_sides);
 
-array[FEATURES] of int: input_star_phi = array1d(FEATURES, [input_star_max_xdist, input_star_min_xdist, input_star_max_ydist, input_star_min_ydist, input_star_left_side_dist, input_star_right_side_dist, input_star_lower_side_dist, input_star_upper_side_dist, input_star_max_dist_from_walls, input_star_max_dist_from_sides]);
-%array[FEATURES] of int: input_star_phi = [input_star_max_xdist, input_star_min_xdist, input_star_max_ydist, input_star_min_ydist, input_star_left_side_dist, input_star_right_side_dist, input_star_lower_side_dist, input_star_upper_side_dist];
+int: input_star_min_dist_from_walls = min(input_star_min_dist_walls);
+int: input_star_min_dist_from_sides = min(input_star_min_dist_sides);
+
+%% TABLE TYPES %%
+
+array[TABLES] of  1..2: input_star_table_types = [input_star_dx[t] + input_star_dy[t] - 1 | t in TABLES];
+array[1..2] of TABLES0: input_star_table_types_count = global_cardinality_closed(input_star_table_types, [1, 2]);
+
+array[FEATURES] of int: input_star_phi = array1d(FEATURES, [input_star_max_xdist, input_star_min_xdist, input_star_max_ydist, input_star_min_ydist, input_star_max_dist_from_walls,input_star_min_dist_from_walls, input_star_max_dist_from_sides,input_star_min_dist_from_sides,input_star_table_types_count[1], input_star_table_types_count[2]);
+
 array[FEATURES] of int: input_star_w_phi = [w1[f] * input_star_phi[f] | f in FEATURES];
 int: input_star_utility = sum(input_star_w_phi);
 

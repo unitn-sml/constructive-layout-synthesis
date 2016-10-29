@@ -58,9 +58,13 @@ int: input_max_dist_from_walls_sides = max([min(input_min_dist_sides[i], input_m
 int: input_max_dist_from_walls = max(input_min_dist_walls);
 int: input_max_dist_from_sides = max(input_min_dist_sides);
 
+int: input_min_dist_from_walls = min(input_min_dist_walls);
+int: input_min_dist_from_sides = min(input_min_dist_sides);
 
-array[FEATURES] of int: phi = array1d(FEATURES, [input_max_xdist, input_min_xdist, input_max_ydist, input_min_ydist, input_left_side_dist, input_right_side_dist, input_lower_side_dist, input_upper_side_dist, input_max_dist_from_walls, input_max_dist_from_sides]);
-%array[FEATURES] of int: phi = [input_max_xdist, input_min_xdist, input_max_ydist, input_min_ydist, input_left_side_dist, input_right_side_dist, input_lower_side_dist, input_upper_side_dist];
+array[TABLES] of 1..2: input_table_types = [input_dx[t] + input_dy[t] - 1 | t in TABLES];
+array[1..2] of TABLES0: input_table_types_count = global_cardinality_closed(input_table_types, [1, 2]);
+
+array[FEATURES] of int: phi = array1d(FEATURES, [input_max_xdist, input_min_xdist, input_max_ydist, input_min_ydist, input_max_dist_from_walls, input_min_dist_from_walls, input_max_dist_from_sides, input_min_dist_from_sides,input_table_types_count[1], input_table_types_count[2]]);
 
 %% SOLVE %%
 
