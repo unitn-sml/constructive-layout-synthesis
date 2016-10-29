@@ -5,6 +5,7 @@ import sys
 import pickle
 import logging
 import argparse
+import threading
 import numpy as np
 
 from sklearn.utils import check_random_state
@@ -25,7 +26,7 @@ def gen_weights(args):
     rng = check_random_state(args['seed'])
     problem = make_problem(args['problem'], **subdict(args, {'problem'}))
 
-    weights = [(uid, np.abs(rng.normal(size=(problem.num_features,)))) 
+    weights = [(uid, rng.normal(size=(problem.num_features,)))
                for uid in range(1, args['users'] + 1)]
 
     with open(args['weights'], 'wb') as f:
@@ -48,10 +49,24 @@ def experiment(args):
 
     traces = []
     start_user = args['user']
-    for u in range(start_user, len(users)):
-        user = users[u]
-        trace = pp(problem, user, max_iters=args['iters'])
-        traces.append((u, trace))
+
+    pd = args['parallel']
+    pdl = (len(users) - start_user) // pd
+    batches = [users[u : u + pdl] for u in range(start_user, len(users), pdl)]
+
+    def _exp(_users):
+        for user in _users:
+            trace = pp(problem, user, max_iters=args['iters'])
+            traces.append(trace)
+
+    threads = []
+    for batch in batches:
+        t = threading.Thread(target=_exp, args=(batch,))
+        t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join()
 
     with open(args['output_file'], 'wb') as f:
         pickle.dump((args['label'], traces), f)
@@ -80,6 +95,10 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--alpha', type=float, default=0.2,
                         help=('The alpha for the improvement'
                         '(std of normal noise on w_star)'))
+    parser.add_argument('-S', '--canvas_size', type=int, default=12,
+                        help=('The canvas size'))
+    parser.add_argument('-t', '--num_tables', type=int, default=8,
+                        help=('The number of tables'))
     parser.add_argument('-L', '--layout', type=int, default=0,
                         help=('The layout'))
     parser.add_argument('-l', '--label', default='exp',
@@ -87,6 +106,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--noise', type=float, default=None,
                         help=('Noise for the user improvements '
                         '(std of normal noise on w_star)'))
+    parser.add_argument('-p', '--parallel', type=int, default=4,
+                        help=('The parallelism degree'))
     parser.add_argument('--debug', action='store_true',
                         help='Enable debug logging on screen')
     parser.add_argument('--log', default='cls.log', help='Log file')
