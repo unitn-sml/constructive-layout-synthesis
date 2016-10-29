@@ -39,12 +39,12 @@ def experiment(args):
     if args['weights']:
         with open(args['weights'], 'rb') as f:
             weights = pickle.load(f)
-        users = [User(problem, w_star, uid=uid, noise=args['noise'], rng=rng)
-                 for uid, w_star in weights]
+        users = [User(problem, w_star, uid=uid, noise=args['noise'], rng=rng,
+                 alpha=args['alpha']) for uid, w_star in weights]
     else:
         users = [User(problem, rng.normal(size=(problem.num_features,)),
-                      uid=uid, noise=args['noise'], rng=rng)
-                 for uid in range(1, args['users'] + 1)]
+                      uid=uid, noise=args['noise'], alpha=args['alpha'],
+                      rng=rng) for uid in range(1, args['users'] + 1)]
 
     traces = []
     start_user = args['user']
@@ -77,6 +77,12 @@ if __name__ == '__main__':
                         help='Number of iterations')
     parser.add_argument('-s', '--seed', type=int, default=None,
                         help='Seed for the random number generator')
+    parser.add_argument('-a', '--alpha', type=float, default=0.2,
+                        help=('The alpha for the improvement'
+                        '(std of normal noise on w_star)'))
+    parser.add_argument('-l', '--layout', type=int, default=0,
+                        help=('The layout'
+                        '(std of normal noise on w_star)'))
     parser.add_argument('-n', '--noise', type=float, default=None,
                         help=('Noise for the user improvements '
                         '(std of normal noise on w_star)'))
