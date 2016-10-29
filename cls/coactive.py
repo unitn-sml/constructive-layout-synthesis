@@ -66,7 +66,7 @@ class User(object):
     """
 
     def __init__(self, problem, w_star, uid=0, noise=None, rng=None,
-                 alpha=0.1):
+                 alpha=0.2):
         if w_star.shape != (problem.num_features,):
             raise ValueError('Mismatching w_star')
 
