@@ -22,13 +22,29 @@ class Furniture(Problem):
     improve_model = 'cls/furniture/improve.mzn'
     phi_model = 'cls/furniture/phi.mzn'
 
-    def __init__(self, canvas_size=12, num_tables=8, **kwargs):
+    def __init__(self, canvas_size=12, num_tables=8, layout=0, **kwargs):
         num_features = 10
         super().__init__(num_features)
 
-        self._data = {'SIDE': canvas_size, 'N_TABLES': num_tables}
+        layouts = [
+        {
+            'door_x': [7, 4],
+            'door_y': [1, canvas_size],
+            'N_WALLS': 2,
+            'wall_x': [1, 8],
+            'wall_y': [1, canvas_size - 2],
+            'wall_dx': [5, 5],
+            'wall_dy': [6, 3]
+        },
+        {
+        }
+        ]
+
+        self._data = {'SIDE': canvas_size, 'N_TABLES': num_tables,
+                      **layouts[layout]}
         self._phis = {}
         self._debug = kwargs['debug']
+
 
     def phi(self, x):
         _frx = freeze(x)
