@@ -144,7 +144,7 @@ def pp(problem, user, max_iters=100):
 
     user.init()
 
-    msg = 'uid = {}, it = {}, t = {}, reg = {}'
+    msg = 'uid = {:02d}, it = {:02d}, t = {:.3f}, reg = {:.3f}'
     w = problem.init_w()
     trace = []
     for i in range(max_iters):
@@ -156,15 +156,17 @@ def pp(problem, user, max_iters=100):
         t_infer = time() - t0
         u_x = user.utility(x)
         phi_x = problem.phi(x)
-        log.debug('uid = {}, it = {}, x = {}', user.uid, i,
+        log.debug('uid = {:02d}, it = {:02d}, x = {}', user.uid, i,
                   partial(x2str, x))
-        log.debug('uid = {}, it = {}, phi_x = {}', user.uid, i,
+        log.debug('uid = {:02d}, it = {:02d}, phi_x = {}', user.uid, i,
                   partial(array2str, phi_x))
-        log.debug('uid = {}, it = {}, u_x = {}', user.uid, i, u_x)
-        log.debug('uid = {}, it = {}, t_infer = {}', user.uid, i, t_infer)
+        log.debug('uid = {:02d}, it = {:02d}, u_x = {}', user.uid, i, u_x)
+        log.debug('uid = {:02d}, it = {:02d}, t_infer = {}', user.uid, i,
+                  t_infer)
 
         regret = user.regret(x)
-        log.debug('uid = {}, it = {}, regret = {}', user.uid, i, regret)
+        log.debug('uid = {:02d}, it = {:02d}, regret = {}', user.uid, i,
+                  regret)
 
         if regret == 0.0:
             log.debug('outcome: user satisfied')
@@ -178,21 +180,25 @@ def pp(problem, user, max_iters=100):
         t_improve = time() - t1
         phi_x_bar = problem.phi(x_bar)
         u_x_bar = user.utility(x_bar)
-        log.debug('uid = {}, it = {}, x_bar = {}', user.uid, i,
+        log.debug('uid = {:02d}, it = {:02d}, x_bar = {}', user.uid, i,
                   partial(x2str, x_bar))
-        log.debug('uid = {}, it = {}, phi_x_bar = {}', user.uid, i,
+        log.debug('uid = {:02d}, it = {:02d}, phi_x_bar = {}', user.uid, i,
                   partial(array2str, phi_x_bar))
-        log.debug('uid = {}, it = {}, u_x_bar = {}', user.uid, i, u_x_bar)
-        log.debug('uid = {}, it = {}, t_improve = {}', user.uid, i, t_improve)
+        log.debug('uid = {:02d}, it = {:02d}, u_x_bar = {}', user.uid, i,
+                  u_x_bar)
+        log.debug('uid = {:02d}, it = {:02d}, t_improve = {}', user.uid, i,
+                  t_improve)
 
         # Model update
         t2 = time()
         w += phi_x_bar - phi_x
         t_update = time() - t2
-        log.debug('uid = {}, it = {}, t_update = {}', user.uid, i, t_update)
+        log.debug('uid = {:02d}, it = {:02d}, t_update = {}', user.uid, i,
+                  t_update)
 
         t_elapsed = t_infer + t_update
-        log.debug('uid = {}, it = {}, t_elapsed = {}', user.uid, i, t_elapsed)
+        log.debug('uid = {:02d}, it = {:02d}, t_elapsed = {}', user.uid, i,
+                  t_elapsed)
 
         trace.append((regret, t_elapsed, w.copy()))
         print(msg.format(user.uid, i, t_elapsed, regret))
