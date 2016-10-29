@@ -22,7 +22,7 @@ class Furniture(Problem):
     improve_model = 'cls/furniture/improve.mzn'
     phi_model = 'cls/furniture/phi.mzn'
 
-    def __init__(self, canvas_size=12, num_tables=6, **kwargs):
+    def __init__(self, canvas_size=12, num_tables=8, **kwargs):
         num_features = 10
         super().__init__(num_features)
 
