@@ -27,6 +27,7 @@ set of int: DISTN = -SIDE..SIDE;
 
 int: N_TABLES;
 set of int: TABLES = 1..N_TABLES;
+set of int: TABLES0 = 0..N_TABLES;
 
 int: MAX_TABLE_SIDE = 2;
 set of int: TABLE_SIDE = 1..MAX_TABLE_SIDE;
@@ -91,6 +92,12 @@ constraint forall(i in WALLS, j in TABLES)(not (wall_x_dists[i, j] < 0 /\ wall_y
 constraint forall(i in WALLS, j in PASS)(not (pass_x[j] >= wall_x[i] /\ pass_x[j] < wall_x[i] + wall_dx[i] /\ pass_y[j] >= wall_y[i] /\ pass_y[j] < wall_y[i] + wall_dy[i]));
 
 
+%% TABLE TYPES %%
+
+array[TABLES] of var 1..2: table_types = [dx[t] + dy[t] - 1 | t in TABLES];
+array[1..2] of var TABLES0: table_types_count;
+constraint global_cardinality_closed(table_types, [1, 2], table_types_count);
+
 
 %% PHI %%
 
@@ -120,9 +127,9 @@ var int: min_dist_from_walls = min(min_dist_walls);
 var int: min_dist_from_sides = min(min_dist_sides);
 
 
-int: N_FEATURES = 8;
+int: N_FEATURES = 10;
 set of int: FEATURES = 1..N_FEATURES;
-array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist, max_dist_from_walls, min_dist_from_walls, max_dist_from_sides, min_dist_from_sides]);
+array[FEATURES] of var int: phi = array1d(FEATURES, [max_xdist, min_xdist, max_ydist, min_ydist, max_dist_from_walls, min_dist_from_walls, max_dist_from_sides, min_dist_from_sides, table_types_count[1], table_types_count[2]]);
 
 
 
@@ -132,7 +139,6 @@ array[FEATURES] of float: w;
 array[FEATURES] of int: w1 = array1d(FEATURES, [round(w[f]*10000) | f in FEATURES]);
 array[FEATURES] of var int: w_phi = array1d(FEATURES, [w1[f] * phi[f] | f in FEATURES]);
 var int: utility = sum(w_phi);
-
 
 solve maximize utility;
 
