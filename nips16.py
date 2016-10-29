@@ -54,7 +54,7 @@ def experiment(args):
         traces.append((u, trace))
 
     with open(args['output_file'], 'wb') as f:
-        pickle.dump(traces, f)
+        pickle.dump((args['label'], traces), f)
 
 
 if __name__ == '__main__':
@@ -80,9 +80,10 @@ if __name__ == '__main__':
     parser.add_argument('-a', '--alpha', type=float, default=0.2,
                         help=('The alpha for the improvement'
                         '(std of normal noise on w_star)'))
-    parser.add_argument('-l', '--layout', type=int, default=0,
-                        help=('The layout'
-                        '(std of normal noise on w_star)'))
+    parser.add_argument('-L', '--layout', type=int, default=0,
+                        help=('The layout'))
+    parser.add_argument('-l', '--label', default='exp',
+                        help=('The label for the graphs'))
     parser.add_argument('-n', '--noise', type=float, default=None,
                         help=('Noise for the user improvements '
                         '(std of normal noise on w_star)'))
