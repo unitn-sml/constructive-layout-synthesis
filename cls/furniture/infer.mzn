@@ -44,8 +44,8 @@ set of int: PASS = 1..MAX_PASS;
 
 int: N_DOORS = 2;
 set of int: DOORS = 1..N_DOORS;
-array[DOORS] of EDGE: door_x ;
-array[DOORS] of EDGE: door_y ;
+array[DOORS] of EDGE: door_x;
+array[DOORS] of EDGE: door_y;
 array[PASS] of var EDGE: pass_x;
 array[PASS] of var EDGE: pass_y;
 var PASS: pass_lenght;
