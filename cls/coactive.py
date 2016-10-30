@@ -85,13 +85,11 @@ class User(object):
         phi_x_star = self.problem.phi(self.x_star)
 
         log = get_logger(__name__)
-        log.debug('uid = {}, w_star = {}', self._uid,
-                  partial(array2str, self.w_star))
-        log.debug('uid = {}, x_star = {}', self._uid,
-                  partial(x2str, self.x_star))
-        log.debug('uid = {}, phi_x_star = {}', self._uid,
-                  partial(array2str, phi_x_star))
-        log.debug('uid = {}, u_star = {}', self._uid, self.u_star)
+        msg = 'uid = {:>2d}, {} = {}'
+        log.debug(msg, self._uid, 'w_star', partial(array2str, self.w_star))
+        log.debug(msg, self._uid, 'w_star', partial(x2str, self.x_star))
+        log.debug(msg, self._uid, 'phi_x_star', partial(array2str, phi_x_star))
+        log.debug(msg, self._uid, 'u_star', self.u_star)
 
     @property
     def uid(self):
@@ -143,12 +141,16 @@ def pp(problem, user, max_iters=100):
     log = get_logger(__name__)
 
     user.init()
+    uid = user.uid
 
-    msg = 'uid = {:02d}, it = {:02d}, t = {:.3f}, reg = {:.3f}'
+    msg_base = 'uid = {:>2d}, it = {:>2d}'
+    msg_it = msg_base + ', reg = {:>7.3f}, t = {:>7.3f}'
+    msg_kv = msg_base + ', {} = {}'
+
     w = problem.init_w()
     trace = []
-    for i in range(max_iters):
-        log.debug('uid = {}, it = {}, w = {}', user.uid, i, w)
+    for it in range(max_iters):
+        log.debug(msg_kv, user.uid, it, 'w', w)
 
         # Inference
         t0 = time()
@@ -156,22 +158,18 @@ def pp(problem, user, max_iters=100):
         t_infer = time() - t0
         u_x = user.utility(x)
         phi_x = problem.phi(x)
-        log.debug('uid = {:02d}, it = {:02d}, x = {}', user.uid, i,
-                  partial(x2str, x))
-        log.debug('uid = {:02d}, it = {:02d}, phi_x = {}', user.uid, i,
-                  partial(array2str, phi_x))
-        log.debug('uid = {:02d}, it = {:02d}, u_x = {}', user.uid, i, u_x)
-        log.debug('uid = {:02d}, it = {:02d}, t_infer = {}', user.uid, i,
-                  t_infer)
+        log.debug(msg_kv, uid, it, 'x', partial(x2str, x))
+        log.debug(msg_kv, uid, it, 'phi_x', partial(array2str, phi_x))
+        log.debug(msg_kv, uid, it, 'u_x', u_x)
+        log.debug(msg_kv, uid, it, 't_infer', t_infer)
 
         regret = user.regret(x)
-        log.debug('uid = {:02d}, it = {:02d}, regret = {}', user.uid, i,
-                  regret)
+        log.debug(msg_kv, uid, it, 'regret', regret)
 
         if regret == 0.0:
             log.debug('outcome: user satisfied')
             trace.append((regret, t_infer, w.copy()))
-            print(msg.format(user.uid, i, t_infer, regret))
+            print(msg_it.format(uid, it, regret, t_infer))
             break
 
         # Improvement
@@ -180,28 +178,22 @@ def pp(problem, user, max_iters=100):
         t_improve = time() - t1
         phi_x_bar = problem.phi(x_bar)
         u_x_bar = user.utility(x_bar)
-        log.debug('uid = {:02d}, it = {:02d}, x_bar = {}', user.uid, i,
-                  partial(x2str, x_bar))
-        log.debug('uid = {:02d}, it = {:02d}, phi_x_bar = {}', user.uid, i,
-                  partial(array2str, phi_x_bar))
-        log.debug('uid = {:02d}, it = {:02d}, u_x_bar = {}', user.uid, i,
-                  u_x_bar)
-        log.debug('uid = {:02d}, it = {:02d}, t_improve = {}', user.uid, i,
-                  t_improve)
+        log.debug(msg_kv, uid, it, 'x_bar', partial(x2str, x_bar))
+        log.debug(msg_kv, uid, it, 'phi_x_bar', partial(array2str, phi_x_bar))
+        log.debug(msg_kv, uid, it, 'u_x_bar', u_x_bar)
+        log.debug(msg_kv, uid, it, 't_improve', t_improve)
 
         # Model update
         t2 = time()
         w += phi_x_bar - phi_x
         t_update = time() - t2
-        log.debug('uid = {:02d}, it = {:02d}, t_update = {}', user.uid, i,
-                  t_update)
+        log.debug(msg_kv, uid, it, 't_update', t_update)
 
         t_elapsed = t_infer + t_update
-        log.debug('uid = {:02d}, it = {:02d}, t_elapsed = {}', user.uid, i,
-                  t_elapsed)
+        log.debug(msg_kv, uid, it, 't_elapsed', t_elapsed)
 
         trace.append((regret, t_elapsed, w.copy()))
-        print(msg.format(user.uid, i, t_elapsed, regret))
+        print(msg_it.format(uid, it, regret, t_elapsed))
 
     else:
         log.debug('outcome: user not satisfied')
