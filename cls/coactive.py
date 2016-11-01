@@ -32,11 +32,11 @@ class Problem(object):
         """Returns the feature vector of x."""
         raise NotImplementedError()
 
-    def infer(self, w):
+    def infer(self, w, approx=False):
         """Infers optimal object."""
         raise NotImplementedError()
 
-    def improve(self, x, x_star, w, alpha=0.1):
+    def improve(self, x, x_star, w, alpha=0.1, approx=False):
        """Makes a minimal improvement to x w.r.t. w."""
        raise NotImplementedError()
 
@@ -103,16 +103,17 @@ class User(object):
         """Returns the regret of object x."""
         return self.u_star - self.utility(x)
 
-    def improve(self, x):
+    def improve(self, x, approx=False):
         """Computes an improvement for x."""
         w_star = np.copy(self.w_star)
         if self.noise:
             nnz = w_star.nonzero()[0]
             w_star[nnz] += self.rng.normal(0, self.noise, size=len(nnz))
-        return self.problem.improve(x, self.x_star, w_star, self.alpha)
+        return self.problem.improve(x, self.x_star, w_star, self.alpha,
+                                    approx=approx)
 
 
-def pp(problem, user, max_iters=100):
+def pp(problem, user, max_iters=100, approx=False):
     """The Preference Perceptron [1]_.
 
     This is a context-less implementation, used for preference elicitation.
@@ -154,7 +155,7 @@ def pp(problem, user, max_iters=100):
 
         # Inference
         t0 = time()
-        x = problem.infer(w)
+        x = problem.infer(w, approx=approx)
         t_infer = time() - t0
         u_x = user.utility(x)
         phi_x = problem.phi(x)
@@ -174,7 +175,7 @@ def pp(problem, user, max_iters=100):
 
         # Improvement
         t1 = time()
-        x_bar = user.improve(x)
+        x_bar = user.improve(x, approx=approx)
         t_improve = time() - t1
         phi_x_bar = problem.phi(x_bar)
         u_x_bar = user.utility(x_bar)
