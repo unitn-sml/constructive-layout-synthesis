@@ -22,7 +22,8 @@ class Furniture(Problem):
     improve_model = 'cls/furniture/improve.mzn'
     phi_model = 'cls/furniture/phi.mzn'
 
-    def __init__(self, canvas_size=12, num_tables=8, layout=0, **kwargs):
+    def __init__(self, canvas_size=12, num_tables=8, layout=0, timeout=None,
+                 **kwargs):
         num_features = 10
         super().__init__(num_features)
 
@@ -40,6 +41,7 @@ class Furniture(Problem):
         }
         ]
 
+        self.timeout = timeout
         self._data = {'SIDE': canvas_size, 'N_TABLES': num_tables,
                       **layouts[layout]}
         self._phis = {}
@@ -59,23 +61,42 @@ class Furniture(Problem):
         self._phis[_frx] = np.array(_phi)
         return self._phis[_frx]
 
-    def infer(self, w):
-        return pymzn.minizinc(self.infer_model, data={**self._data, 'w': w},
-                              output_vars=['x', 'y', 'dx', 'dy'],
-                              mzn_globals_dir='opturion-cpx',
-                              serialize=True, keep=True, 
-                              fzn_fn=pymzn.opturion)[0]
+    def infer(self, w, approx=False):
+        sols = []
+        if approx and self.timeout:
+            timeout = self.timeout
+        else:
+            timeout = None
+        while len(sols) == 0:
+            sols =  pymzn.minizinc(self.infer_model,
+                                   data={**self._data, 'w': w},
+                                   output_vars=['x', 'y', 'dx', 'dy'],
+                                   mzn_globals_dir='opturion-cpx',
+                                   serialize=True, keep=True, 
+                                   fzn_fn=pymzn.opturion, timeout=timeout)
+            if timeout is not None:
+                timeout *= 2
+        return sols[-1]
 
-    def improve(self, x, x_star, w, alpha=0.1):
+    def improve(self, x, x_star, w, alpha=0.2, approx=False):
         try:
-            return pymzn.minizinc(self.improve_model,
-                                  data={**self._data, **input_x(x), 'w': w,
-                                        **input_star_x(x_star),
-                                        'ALPHA': alpha},
-                                  output_vars=['x', 'y', 'dx', 'dy'],
-                                  mzn_globals_dir='opturion-cpx',
-                                  serialize=True, keep=True,
-                                  fzn_fn=pymzn.opturion)[0]
+            sols = []
+            if approx and self.timeout:
+                timeout = self.timeout
+            else:
+                timeout = None
+            while len(sols) == 0:
+                sols = pymzn.minizinc(self.improve_model,
+                                      data={**self._data, **input_x(x), 'w': w,
+                                            **input_star_x(x_star),
+                                            'ALPHA': alpha},
+                                      output_vars=['x', 'y', 'dx', 'dy'],
+                                      mzn_globals_dir='opturion-cpx',
+                                      serialize=True, keep=True,
+                                      fzn_fn=pymzn.opturion, timeout=timeout)
+                if timeout is not None:
+                    timeout *= 2
+            return sols[-1]
         except pymzn.MiniZincUnsatisfiableError:
             # when no improvement possible for noisy users
             return x
