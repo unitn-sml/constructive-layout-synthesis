@@ -47,16 +47,18 @@ def experiment(args):
                       uid=uid, noise=args['noise'], alpha=args['alpha'],
                       rng=rng) for uid in range(1, args['users'] + 1)]
 
+    approx = args['timeout'] is not None
+
     traces = []
     start_user = args['user']
 
     pd = args['parallel']
-    pdl = (len(users) - start_user) // pd
+    pdl = (len(users) - start_user) // pd + 1
     batches = [users[u : u + pdl] for u in range(start_user, len(users), pdl)]
 
     def _exp(_users):
         for user in _users:
-            trace = pp(problem, user, max_iters=args['iters'])
+            trace = pp(problem, user, max_iters=args['iters'], approx=approx)
             traces.append(trace)
 
     threads = []
@@ -108,6 +110,8 @@ if __name__ == '__main__':
                         '(std of normal noise on w_star)'))
     parser.add_argument('-p', '--parallel', type=int, default=4,
                         help=('The parallelism degree'))
+    parser.add_argument('--timeout', type=int, default=None,
+                        help=('The timeout for opturion'))
     parser.add_argument('--debug', action='store_true',
                         help='Enable debug logging on screen')
     parser.add_argument('--log', default='cls.log', help='Log file')
