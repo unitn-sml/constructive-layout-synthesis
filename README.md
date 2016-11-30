@@ -14,7 +14,7 @@ Please see our paper:
 The following packages are required:
 
 - [numpy](http://www.numpy.org/)
-- [pymzn](https://github.com/paolodragone/pymzn), tested with version 0.10.7
+- [pymzn](https://github.com/paolodragone/pymzn), tested with version 0.10.8
 - [minizinc](https://minizinc.org), tested with version 2.0.13
 - [opturion](http://www.opturion.com/), tested with version 1.0.2
 
