@@ -1,0 +1,17 @@
+array[CELLS] of ROOM_TYPES0: input_belong_to;
+
+var int: diversity = sum([1*(belong_to[c]!=input_belong_to[c]) | c in CELLS] );
+
+0.0..1.0: alpha;
+int: input_utility;
+int: input_star_utility;
+
+constraint assert(input_star_utility >= input_utility,
+		"error: input star utility cannot be < than input_utility");
+
+int: utility_diff =  ceil((input_star_utility - input_utility)*alpha) + input_utility;
+
+constraint utility >= utility_diff;
+
+solve minimize diversity;
+

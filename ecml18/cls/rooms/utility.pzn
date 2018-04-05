@@ -1,0 +1,14 @@
+array[SUBROOMS] of EDGE0: input_x;
+array[SUBROOMS] of SUBROOM_SIDE: input_dx;
+array[SUBROOMS] of EDGE0: input_y;
+array[SUBROOMS] of SUBROOM_SIDE: input_dy;
+int : input_side_diff;
+
+constraint assignment(x,input_x);
+constraint assignment(y,input_y);
+constraint assignment(dx,input_dx);
+constraint assignment(dy,input_dy);
+constraint side_diff == input_side_diff;
+
+solve maximize utility;
+

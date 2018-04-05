@@ -1,0 +1,559 @@
+include "globals.mzn";
+
+function var bool : assignment(array[int] of var int: x,
+			     array[int] of int: input_x) =
+	forall( i in index_set(x))(x[i] == input_x[i]);
+
+function var bool: sq_inside(var int: cx, 
+			var int: cy ,
+			var int: cdx ,
+			var int: cdy, 
+			var int: sx,
+			var int: sy ) =
+	sx >= cx /\
+	sx +1 <= cx + cdx /\
+	sy >= cy /\
+	sy +1 <= cy + cdy;
+
+function bool: sq_inside(int: cx, 
+			int: cy ,
+			int: cdx ,
+			int: cdy, 
+			int: sx,
+			int: sy ) =
+	sx >= cx /\
+	sx +1 <= cx + cdx /\
+	sy >= cy /\
+	sy +1 <= cy + cdy;
+function var bool: touching(var int: x1,var int: y1,var int: dx1,var int: dy1,
+			    var int: x2,var int: y2,var int: dx2,var int: dy2) =
+	((x1 - x2 - dx2 == 0 \/
+	x2 - x1 - dx1 == 0  ) /\
+	(y1 - y2 - dy2 < 0 /\
+	y2 - y1 - dy1 < 0 ) )  
+	\/
+	((x1 - x2 - dx2 < 0 /\
+	x2 - x1 - dx1 < 0  ) /\
+	(y1 - y2 - dy2 == 0 \/
+	y2 - y1 - dy1 == 0 ) );  
+
+function  bool: touching( int: x1, int: y1, int: dx1, int: dy1,
+			     int: x2, int: y2, int: dx2, int: dy2) =
+	((x1 - x2 - dx2 == 0 \/
+	x2 - x1 - dx1 == 0  ) /\
+	(y1 - y2 - dy2 < 0 /\
+	y2 - y1 - dy1 < 0 ) )  
+	\/
+	((x1 - x2 - dx2 < 0 /\
+	x2 - x1 - dx1 < 0  ) /\
+	(y1 - y2 - dy2 == 0 \/
+	y2 - y1 - dy1 == 0 ) );  
+function var bool: outside( var int: x,
+                 var int: y,
+                 var int: dx,
+                 var int: dy,
+		 var int: cx,
+                 var int: cy,
+                 var int: cdx,
+                 var int: cdy) =
+	x+dx<=cx \/ 
+	y+dy<=cy \/ 
+	cx+cdx<=x \/ 
+	cy+cdy<=y; 
+
+function var bool: overlap(var int: x1,var int: y1,var int: dx1,var int: dy1,
+		var int: x2,var int: y2,var int: dx2,var int: dy2) =
+
+	x1 + dx1  > x2 /\
+	x2 + dx2  > x1 /\
+	y1 + dy1  > y2 /\
+	y2 + dy2  > y1;
+
+	
+function  bool: overlap_square_walls(
+			array[int] of int:  wx,
+			array[int] of int:  wy,
+			array[int] of int:  wdx,
+			array[int] of int:  wdy,
+			int: sx,
+			int: sy) = 
+		exists(w  in index_set(wx))
+		(
+			sq_inside(wx[w],wy[w],wdx[w],wdy[w],sy,sy)
+		);
+function int: percentage_area(0.0..1.0: fraction) =
+	round(APARTMENT_AREA * fraction);
+%% DOMAIN %%
+
+
+
+
+
+int: SIDE;
+set of int: EDGE = 1..SIDE;
+set of int: EDGE0 = 0..SIDE;
+set of int: DISTS = 0..SIDE;
+set of int: DISTN = -SIDE..SIDE;
+
+int: APARTMENT_AREA;
+
+constraint assert(SIDE*SIDE >= APARTMENT_AREA,
+	"error, the area of the apartement cannot be greather than SIDE*SIDE");
+
+set of int: CELLS = 1..(SIDE*SIDE);
+set of int: CELLS0 = 0..(SIDE*SIDE);
+
+%% ROOM TYPES PARAMETERS %%
+int: ROOM_TYPES_N = 6;
+int: KICTCHEN = 1;
+int: DININGROOM = 2;
+int: LIVINGROOM = 3;
+int: BEDROOM = 4;
+int: BATHROOM = 5;
+int: CORRIDOR = 6;
+
+%% arrays of lb and ub of number of types of rooms %%
+set of int: ROOM_TYPES = 1..ROOM_TYPES_N;
+set of int: ROOM_TYPES0 = 0..ROOM_TYPES_N;
+array[ROOM_TYPES] of int: rt_lb;
+array[ROOM_TYPES] of int: rt_ub;
+
+
+
+int: N_ROOMS = sum(rt_ub); 
+set of int: ROOMS = 1..N_ROOMS;
+set of int: ROOMS0 = 0..N_ROOMS;
+
+%% number of subrooms per room %%
+int: SUB_X_ROOM;
+constraint assert (SUB_X_ROOM <= 3,"error: SUB_X_ROOM must be <= 3");
+
+set of int: SUB_X_ROOMS = 1..SUB_X_ROOM;
+
+int: N_SUBROOMS = N_ROOMS * SUB_X_ROOM;
+set of int: SUBROOMS = 1..N_SUBROOMS;
+set of int: SUBROOMS0 = 0..N_SUBROOMS;
+
+int: MAX_SUBROOM_SIDE = SIDE;
+set of int: SUBROOM_SIDE = 0..MAX_SUBROOM_SIDE;
+
+
+
+int: N_WALL;
+set of int: WALLS = 1..N_WALL;
+
+array[WALLS] of int: wall_x;
+array[WALLS] of int: wall_dx;
+array[WALLS] of int: wall_y;
+array[WALLS] of int: wall_dy;
+
+constraint assert(forall(w in WALLS)(
+					wall_x[w] >= 1 /\ 
+					wall_y[w] >= 1  /\ 
+					wall_x[w] + wall_dx[w]  <= SIDE + 1 /\ 
+					wall_y[w] + wall_dy[w]  <= SIDE + 1 
+				),
+		"error :walls must entirely be inside the SIDE*SIDE canvas");
+
+EDGE: door_x;
+EDGE: door_y;
+
+array[SUBROOMS] of var EDGE0: x;
+array[SUBROOMS] of var SUBROOM_SIDE: dx;
+array[SUBROOMS] of var EDGE0: y;
+array[SUBROOMS] of var SUBROOM_SIDE: dy;
+
+%% subrooms must be inside the canvas %%
+constraint forall (s in SUBROOMS)((x[s] +dx[s] -1 <= SIDE) /\ (y[s] +dy[s] -1 <= SIDE) );
+
+
+int: NUM_MAX_RATIO;
+int: DEN_MAX_RATIO;
+
+constraint assert(NUM_MAX_RATIO <= DEN_MAX_RATIO,"error: the max ratio between subrooms sides must be <= 1");
+
+constraint forall(s in SUBROOMS)(
+			dx[s] * DEN_MAX_RATIO >= dy[s] * NUM_MAX_RATIO /\
+			dy[s] * DEN_MAX_RATIO >= dx[s] * NUM_MAX_RATIO
+
+		);
+
+
+
+set of int: SUB_COMBS = 1..round((N_SUBROOMS*(N_SUBROOMS-1)/2));
+
+array[SUB_COMBS] of var int: xdists_above = [x[s2] - x[s1] - dx[s1] | s1, s2 in SUBROOMS where s1 < s2];
+array[SUB_COMBS] of var int: xdists_below = [x[s1] - x[s2] - dx[s2] | s1, s2 in SUBROOMS where s1 < s2];
+array[SUB_COMBS] of var int: xdists = [max([xdists_above[t], xdists_below[t]]) | t in SUB_COMBS];
+
+
+array[SUB_COMBS] of var int: ydists_above = [y[s2] - y[s1] - dy[s1] | s1, s2 in SUBROOMS where s1 < s2];
+array[SUB_COMBS] of var int: ydists_below = [y[s1] - y[s2] - dy[s2] | s1, s2 in SUBROOMS where s1 < s2];
+array[SUB_COMBS] of var int: ydists = [max([ydists_above[t], ydists_below[t]]) | t in SUB_COMBS];
+
+array[1..2,SUB_COMBS] of SUBROOMS: comb_indexes = array2d(
+							1..2,
+							SUB_COMBS,
+								[s1
+								| s1, s2 in SUBROOMS 
+								where s1 < s2] 
+								++ 
+								[s2
+								| s1, s2 in SUBROOMS 
+								where s1 < s2]
+							);
+
+%% no subroom overlap (diffn) %%
+constraint forall (s in SUB_COMBS)( (xdists[s] >=0)*1 +(ydists[s] >=0 )*1 > 0);
+
+
+array[SUBROOMS] of var bool: valid;
+%% definition of valid subrooms%%
+constraint forall(s in SUBROOMS)( 
+				(dx[s]*SIDE >= valid[s]*1) /\ 
+				(dy[s]*SIDE >= valid[s]*1) /\
+				(x[s]*SIDE >= valid[s]*1)  /\
+				(y[s]*SIDE >= valid[s]*1)
+				);  
+array[SUBROOMS] of var bool: invalid; 
+%% definition of invalid subrooms%%
+constraint forall(s in SUBROOMS)( 
+					(x[s] <= (1 - invalid[s])*SIDE) /\ 
+					(y[s] <= (1 - invalid[s])*SIDE) /\
+					(dx[s] <= (1 - invalid[s])*SIDE) /\
+					(dy[s] <= (1 - invalid[s])*SIDE)
+				);  
+
+%% subrooms must be valid or invalid  %%
+constraint forall(s in SUBROOMS)( valid[s] xor invalid[s] );
+
+
+%% touching subrooms  matrix %%
+
+array[SUBROOMS,SUBROOMS] of var bool: touching_subs_mat;
+
+constraint forall(sc in SUB_COMBS)
+		(
+		touching_subs_mat[comb_indexes[1,sc],comb_indexes[2,sc]] == 
+			(
+			xdists[sc] <= 0  /\ 
+			ydists[sc] <= 0 /\
+			valid[comb_indexes[1,sc]] /\
+			valid[comb_indexes[2,sc]]
+			)
+		);
+%% definition of touching_subs_mat for s1 > s2 %%
+constraint forall(s1,s2 in SUBROOMS where s1 > s2)
+		(
+		touching_subs_mat[s1,s2] == touching_subs_mat[s2,s1]
+		);
+
+%% definition of touching_subs_mat for s1 == s2 %%
+constraint forall(s in SUBROOMS)( not touching_subs_mat[s,s]);
+
+
+array[SUBROOMS,SUBROOMS,1..2] of var int: debug_matrix;
+
+constraint forall(sc in SUB_COMBS)
+		(
+		debug_matrix[comb_indexes[1,sc],comb_indexes[2,sc],1] == xdists[sc]
+		);
+
+constraint forall(sc in SUB_COMBS)
+		(
+		debug_matrix[comb_indexes[1,sc],comb_indexes[2,sc],2] == ydists[sc]
+		);
+
+constraint forall(s1,s2 in SUBROOMS, i in 1..2 where s1 > s2)
+		(
+		debug_matrix[s1,s2,i] == debug_matrix[s2,s1,i]
+		);
+constraint forall(s in SUBROOMS, i in 1..2 )(debug_matrix[s,s,i] == 20);
+
+
+%% touching rooms matrix %%
+
+
+array[ROOMS] of var bool: valid_rooms = [
+						sum(
+							[valid[(r-1)*SUB_X_ROOM + s]*1 
+							| s in SUB_X_ROOMS]
+						) > 0 
+					| r in ROOMS];
+
+array[ROOMS,ROOMS] of var bool: touching_rooms_mat;
+
+%% definition of touching_rooms_mat for r1 < r2 %%
+constraint forall(r1,r2 in ROOMS where r1 < r2)
+		(
+		touching_rooms_mat[r1,r2] ==
+			(
+				sum(
+					[ touching_subs_mat[s1,s2]*1 
+					| s1,s2 in SUBROOMS 
+					where (s1 < s2 /\ sub_type[s1] == r1 /\ sub_type[s2] ==r2 ) ] 
+				) > 0
+			)
+		);
+%% definition of touching_rooms_mat for r1 > r2 %%
+constraint forall(r1,r2 in ROOMS where r1 > r2) 
+		(
+		touching_rooms_mat[r1,r2] == touching_rooms_mat[r2,r1]
+		);
+%% definition of touching_rooms_mat for r1 == r2 %%
+constraint forall(r in ROOMS)(not touching_rooms_mat[r,r]);
+
+
+
+
+
+%% constraints over the minimum number of types of rooms %%
+
+
+array[ROOM_TYPES0] of var int: valid_room_types;
+%% definition of valid_room_types (number of valid rooms per type)
+constraint global_cardinality_closed(
+			[valid_rooms[r]*room_type[r] | r in ROOMS],
+			array1d(ROOM_TYPES0,[r | r in ROOM_TYPES0]),
+			valid_room_types);
+%% for every room type the number of rooms must be greater than the minimum requirements %%
+constraint forall(t in ROOM_TYPES)(valid_room_types[t] >= rt_lb[t] );
+
+array[SUBROOMS] of ROOMS: sub_type = [ r |  r in ROOMS,i in SUB_X_ROOMS  ];
+array[ROOMS] of ROOM_TYPES : room_type = array1d(ROOMS,[t | t in ROOM_TYPES, r in 1..rt_ub[t] ] );
+
+
+array[WALLS, SUBROOMS] of var int: wall_x_dists = array2d(
+							WALLS, 
+							SUBROOMS, 
+							[max([wall_x[w] - x[t] - dx[t], x[t] - wall_x[w] - wall_dx[w]]) 
+							| w in WALLS, t in SUBROOMS]
+						);
+array[WALLS, SUBROOMS] of var int: wall_y_dists = array2d(
+							WALLS, 
+							SUBROOMS, 
+							[max([wall_y[w] - y[t] - dy[t], y[t] - wall_y[w] - wall_dy[w]]) 
+							| w in WALLS, t in SUBROOMS]
+						);
+
+constraint forall(i in WALLS, j in SUBROOMS)(not (wall_x_dists[i, j] < 0 /\ wall_y_dists[i, j] < 0));
+
+constraint forall(r in ROOMS, 
+		s1 in SUB_X_ROOMS, 
+		s2 in SUB_X_ROOMS where s1 < s2
+		)
+		(
+		touching(
+			x[(r-1)*SUB_X_ROOM +s1],
+			y[(r-1)*SUB_X_ROOM +s1 ],
+			dx[(r-1)*SUB_X_ROOM +s1] ,
+	 		dy[(r-1)*SUB_X_ROOM +s1],
+			x[(r-1)*SUB_X_ROOM +s2],
+			y[(r-1)*SUB_X_ROOM +s2],
+			dx[(r-1)*SUB_X_ROOM +s2],
+			dy[(r-1)*SUB_X_ROOM +s2]
+			) \/
+		not valid[(r-1)*SUB_X_ROOM +s1]   \/
+		not valid[(r-1)*SUB_X_ROOM +s2]
+		);
+
+constraint forall(s in SUBROOMS)( valid[s] \/ (x[s] == 0 /\ y[s] == 0));
+
+array[CELLS] of var SUBROOMS0: belong_to = [ max(
+						[  sq_inside(x[s],y[s],dx[s],dy[s],ex,ey)*s 
+						| s in SUBROOMS]
+						)   
+					    | ex,ey in EDGE ];
+
+
+array[SUBROOMS0] of var CELLS0: sub_areas = global_cardinality_closed(belong_to,
+								     array1d(SUBROOMS0,[i |i in SUBROOMS0]));
+array[ROOMS0] of var CELLS0: room_areas = array1d(ROOMS0,
+						[sub_areas[0]]  ++
+						[sum( [sub_areas[r-1 + s] | s in SUB_X_ROOMS]) | r in ROOMS]
+						);
+array[ROOM_TYPES0] of var CELLS0: type_areas = array1d(
+						ROOM_TYPES0,
+						[room_areas[0] ] ++
+						[
+							sum(
+								[room_areas[r] 
+						     		| r in ROOMS 
+								where room_type[r] == t ]
+							) 
+							| t in ROOM_TYPES]
+						);
+
+
+0.0..1.0: MINIMUM_AREA_PER_ROOM;			
+constraint forall(r in ROOMS)( room_areas[r] >= percentage_area(MINIMUM_AREA_PER_ROOM)*valid_rooms[r]);
+
+%% uncovered area %%
+var int: uncovered_area = type_areas[0] - (SIDE*SIDE - APARTMENT_AREA);
+constraint uncovered_area == 0;
+
+
+
+%%distance from doors  %%
+
+array[SUBROOMS] of var int: door_x_dists = array1d(SUBROOMS, 
+							[max([door_x - x[t] - dx[t], x[t] - door_x - 1]) 
+							| t in SUBROOMS]
+						);
+	
+array[SUBROOMS] of var int: door_y_dists = array1d(SUBROOMS, 
+							[max([door_y - y[t] - dy[t], y[t] - door_y - 1]) 
+							| t in SUBROOMS]
+						);
+
+array[ROOM_TYPES] of var bool : door_room_type_belong = array1d(
+							ROOM_TYPES,
+							[ 
+								sum(    
+									[1*(door_x_dists[s] < 0 /\ door_y_dists[s] < 0)
+									| s in SUBROOMS where room_type[sub_type[s]] == rt ]
+								   ) > 0
+								| rt in ROOM_TYPES 
+							]);
+
+%% distance from south %%
+
+
+array[SUBROOMS] of var int: south_dists = array1d(SUBROOMS, 
+							[ x[s] + round(SIDE/3)*(1-valid[s])
+							| s in SUBROOMS]
+						);
+
+
+array[ROOM_TYPES] of var int : south_room_type_dists = array1d(
+							ROOM_TYPES,
+							[ 
+								sum(
+									[ south_dists[s]
+									| s in SUBROOMS where room_type[sub_type[s]] == rt ]
+								   ) 
+								| rt in ROOM_TYPES 
+							]);
+
+%% number of adjacent rooms %%
+
+array[ROOM_TYPES] of var int : adjacent_rooms ;
+constraint forall(rt in ROOM_TYPES)
+		(
+		adjacent_rooms[rt] ==
+			sum( 
+				[ touching_rooms_mat[r1,r2]*1 
+				| r1,r2 in ROOMS
+				where room_type[r1] == rt ]
+			)
+		);
+
+
+%% deviation between areas of the same type %%
+array[ROOM_TYPES] of var int: deviation ; 
+constraint forall(rt in ROOM_TYPES)
+		(
+		deviation[rt] == 
+			sum(
+				[ abs(room_areas[r1] - room_areas[r2])
+				| r1,r2 in ROOMS
+				where r1 < r2 /\ room_type[r1] == rt /\ room_type[r2] == rt] 
+			)	
+		);
+
+%% FEATURES %%
+
+
+var EDGE0: side_diff;
+constraint forall(s in SUBROOMS)( ( dx[s] - dy[s] <= side_diff) /\ ( dy[s] - dx[s] <= side_diff) );
+
+
+
+%% areas per type of room %%
+int: p_15 = percentage_area(0.15);
+int: p_30 = percentage_area(0.3);
+
+%% bolean features over the percentage of covered space %%
+array[ROOM_TYPES] of var 0..1: under_15 = [(type_areas[t] > 0 /\ type_areas[t] < p_15)*1 | t in ROOM_TYPES];
+array[ROOM_TYPES] of var 0..1: between_15_30 = [((type_areas[t] >= p_15) /\ (type_areas[t] <= p_30))*1 | t in ROOM_TYPES];
+array[ROOM_TYPES] of var 0..1: over_30 = [(type_areas[t] > p_30)*1 | t in ROOM_TYPES];
+
+%% number of subrooms (total) %%
+var int: valid_subrooms = sum([ 1*valid[s] | s in SUBROOMS]);
+
+int: N_NORM_FEATURES = ROOM_TYPES_N*4;
+int: N_NOT_NORM_FEATURES = (ROOM_TYPES_N*3) + 3;
+
+int: N_FEATURES = N_NORM_FEATURES + N_NOT_NORM_FEATURES;
+
+set of int: NORM_FEATURES = 1..N_NORM_FEATURES;
+set of int: NOT_NORM_FEATURES = (N_NORM_FEATURES+1)..N_FEATURES;
+set of int: FEATURES = 1..N_FEATURES;
+
+
+
+
+array[FEATURES]  of var int: phi = array1d(FEATURES,
+						under_15 ++ 
+						between_15_30 ++ 
+						over_30 ++ 
+						door_room_type_belong ++
+						[valid_room_types[rt] | rt in ROOM_TYPES] ++ 
+						deviation ++
+						south_room_type_dists ++
+						[adjacent_rooms[CORRIDOR],side_diff,valid_subrooms]);
+
+array[FEATURES] of float: w;
+
+array[NOT_NORM_FEATURES] of float: normalizers = array1d(NOT_NORM_FEATURES,
+								[ if rt_ub[rt] > 0 then 1.0/rt_ub[rt] else 0 endif | rt in ROOM_TYPES] ++ %valid_room_types
+								[ 1.0/APARTMENT_AREA | rt in ROOM_TYPES] ++ %deviation 
+								[ 1.0/SIDE | rt in ROOM_TYPES  ] ++   % south_room_type_dists
+								[1.0/N_ROOMS,1.0/SIDE,1.0/N_SUBROOMS]);   %[side_diff,valid_subrooms]
+array[FEATURES] of float: all_normalizers = array1d(FEATURES,
+							[ 1.0 |f in NORM_FEATURES] ++
+							[normalizers[f] | f in NOT_NORM_FEATURES]
+						);
+array[FEATURES] of int: w1 = array1d(FEATURES, 
+					[round(w[f]*10000) | f in NORM_FEATURES] ++ 
+					[round(w[f]*normalizers[f]*10000) | f in NOT_NORM_FEATURES]
+					);
+array[FEATURES] of var int: w_phi = array1d(FEATURES, [(w1[f] * phi[f])  | f in FEATURES]);
+var int: utility = sum(w_phi) ;
+
+
+
+
+%constraint forall( i in SUB_COMBS)(not_overlapping[i]);
+
+
+%output [	
+%        "x = " ++ show(x) ++ ";\n" ++
+%        "y = " ++ show(y) ++ ";\n" ++
+%        "dx = " ++ show(dx) ++ ";\n" ++
+%        "dy = " ++ show(dy) ++ ";\n" ++
+%        "xdists = " ++ show(xdists) ++ ";\n" ++
+%        "ydists = " ++ show(ydists) ++ ";\n" ++
+%        "type_areas = " ++ show(type_areas) ++ ";\n" ++
+%        "valid = " ++ show(valid) ++ ";\n" ++
+%        "invalid = " ++ show(invalid) ++ ";\n" ++
+%        "valid_rooms = " ++ show(valid_rooms) ++ ";\n" ++
+%        "valid_room_types = " ++ show(valid_room_types) ++ ";\n" ++
+%        "room_type = " ++ show(room_type) ++ ";\n" ++
+%        "sub_type = " ++ show(sub_type) ++ ";\n" ++
+%        "belong_to = " ++ show(belong_to) ++ ";\n",
+%        "phi = " ++ show(phi) ++ ";\n",
+%        "w = " ++ show(w) ++ ";\n",
+%        "w1 = " ++ show(w1) ++ ";\n",
+%        "touching_subs_mat = " ++ show(touching_subs_mat) ++ ";\n",
+%        "touching_rooms_mat = " ++ show(touching_rooms_mat) ++ ";\n",
+%        "debug_matrix = " ++ show(debug_matrix) ++ ";\n",
+%        "door_room_type_belong = " ++ show(door_room_type_belong) ++ ";\n",
+%        "south_room_type_dists = " ++ show(south_room_type_dists) ++ ";\n",
+%        "adjacent_rooms = " ++ show(adjacent_rooms) ++ ";\n",
+%        "all_normalizers = " ++ show(all_normalizers) ++ ";\n",
+%        "phi = " ++ show(phi) ++ ";\n",
+%        "utility = " ++ show(utility) ++ ";\n"
+%
+%];
+
